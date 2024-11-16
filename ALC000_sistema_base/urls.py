@@ -1,6 +1,11 @@
-from django.urls import path
-from views.views import HolaMundoView
+# urls.py
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from ALC000_sistema_base.views.views import ConvocatoriaViewSet
+
+router = DefaultRouter()
+router.register(r'convocatorias', ConvocatoriaViewSet)
 
 urlpatterns = [
-    path('hola-mundo/', HolaMundoView, name="hola-mundo"),
+    path('', include(router.urls)),
 ]

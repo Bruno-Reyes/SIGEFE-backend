@@ -1,7 +1,9 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
+# views.py
+from rest_framework import viewsets
+from ALC000_sistema_base.models.models import Convocatoria
+from ALC000_sistema_base.serializers import ConvocatoriaSerializer
 
-class HolaMundoView(APIView):
-    def get(self, request):
-        return Response({"message": "Hola mundo desde Django"}, status=status.HTTP_200_OK)
+class ConvocatoriaViewSet(viewsets.ModelViewSet):
+    queryset = Convocatoria.objects.all()
+    serializer_class = ConvocatoriaSerializer
+
