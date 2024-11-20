@@ -40,6 +40,12 @@ INSTALLED_APPS = [
     'rest_framework',
     'ALC000_sistema_base',
     'ALC100_captacion',
+    'ALC200_asignacion',
+    'ALC300_capacitacion',
+    'ALC400_apoyos_economicos',
+    'ALC500_control_escolar',
+    'ALC600_logistica',
+    'ALC700_motor_ia',
 ]
 
 MIDDLEWARE = [
