@@ -1,7 +1,7 @@
 # urls.py
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from ALC000_sistema_base.views.views import ConvocatoriaViewSet
+from ALC100_captacion.views.views import ConvocatoriaViewSet
 
 router = DefaultRouter()
 router.register(r'convocatorias', ConvocatoriaViewSet)

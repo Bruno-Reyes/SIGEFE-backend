@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'ALC000_sistema_base',
+    'ALC100_captacion',
 ]
 
 MIDDLEWARE = [
