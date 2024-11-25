@@ -74,7 +74,7 @@ class DetallesUsuario(models.Model):
         ('Conocer personas y trabajar con niños', 'Conocer personas'),
         ('Apoyar y participar en programas sociales', 'Apoyar en programas sociales'),
     ]
-    razones_interes = models.CharField(max_length=50, choices=RAZONES_INTERES_OPCIONES)
+    razones_interes = models.CharField(max_length=100, choices=RAZONES_INTERES_OPCIONES)
     profesion_interes = models.CharField(max_length=50)
     INTERES_INCORPORACION_OPCIONES = [
         ('Prácticas profesionales', 'Prácticas profesionales'),
