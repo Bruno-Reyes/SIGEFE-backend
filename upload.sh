@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Actualizar el fichero de requirements.txt
-cd ..
-
 pip freeze > requirements.txt
 
 # Subir los cambios al repositorio

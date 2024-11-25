@@ -48,11 +48,3 @@ usuario_coord_operativo = Usuario.objects.create_user(
 for usuario in Usuario.objects.all():
     print(usuario.email, usuario.tipo_usuario, usuario.password)
 
-# Crear los detalles del usuario
-#   detalles_aspirante = DetallesUsuario.objects.create(
-#    usuario=usuario_aspirante,
-#    # Rellenar los campos de detalles según sea necesario
-#    telefono='1234567890',
-#    direccion='Dirección ejemplo',
-#    fecha_nacimiento='1990-01-01'
-#)    

@@ -142,3 +142,20 @@ class Convocatoria(models.Model):
     fecha_limite_registro = models.DateField()
     fecha_entrega_resultados = models.DateField()
     max_participantes = models.PositiveIntegerField()
+
+class Inscripciones(models.Model): 
+    convocatoria = models.ForeignKey(
+        Convocatoria,
+        on_delete=models.CASCADE,
+        related_name="inscripciones"
+    )
+    usuario = models.ForeignKey(
+        DetallesUsuario,
+        on_delete=models.CASCADE,
+        related_name="inscripciones"
+    )
+    fecha_inscripcion = models.DateField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.usuario.username} inscrito en {self.convocatoria.lugar_convocatoria} el {self.fecha_inscripcion}"
+    
