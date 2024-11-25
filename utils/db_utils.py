@@ -20,8 +20,8 @@ def get_convocatorias():
 def get_detalles_usuario():
     total_detalles = DetallesUsuario.objects.count()
     print(f"Total de registros en DetallesUsuario: {total_detalles}")
-    detalles = DetallesUsuario.objects.all()
-    for detalle in detalles:
-        print(f"Type: {type(detalle)} \n Usuario: {detalle.usuario} \n Nombre: {detalle.nombre} \n Apellido: {detalle.apellido} \n Fecha de nacimiento: {detalle.fecha_nacimiento} \n\n")
+    # detalles = DetallesUsuario.objects.all()
+    # for detalle in detalles:
+    #     print(f"Type: {type(detalle)} \n Usuario: {detalle.usuario} \n Nombre: {detalle.nombre} \n Apellido: {detalle.apellido} \n Fecha de nacimiento: {detalle.fecha_nacimiento} \n\n")
 
-# get_detalles_usuario()
+get_detalles_usuario()

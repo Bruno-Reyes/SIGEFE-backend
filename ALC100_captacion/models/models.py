@@ -158,4 +158,3 @@ class Inscripciones(models.Model):
 
     def __str__(self):
         return f"{self.usuario.username} inscrito en {self.convocatoria.lugar_convocatoria} el {self.fecha_inscripcion}"
-    

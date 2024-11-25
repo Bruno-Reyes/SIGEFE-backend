@@ -10,9 +10,9 @@ http://localhost:8000/api/
 
   - token/
 
-    **Method: POST**
+    #### **Method: POST**
 
-    ### REQUEST
+    #### REQUEST
 
     ```json
     {
@@ -21,7 +21,7 @@ http://localhost:8000/api/
     }
     ```
 
-    ### RESPONSE
+    #### RESPONSE
 
     ```json
     {
@@ -37,3 +37,55 @@ http://localhost:8000/api/
 
 - captacion/
   - convocatorias/
+    ### **Method: GET**
+
+    #### **Headers: 'Bearer' Access Token**
+
+    #### REQUEST
+    None
+    
+
+    #### RESPONSE
+
+    ```json
+    [{
+        "id": 1,
+        "lugar_convocatoria": "Aguascalientes",
+        "fecha_limite_registro": "2025-01-01",
+        "fecha_entrega_resultados": "2025-01-15",
+        "max_participantes": 249
+    },
+    {
+        "id": 2,
+        "lugar_convocatoria": "Baja California",
+        "fecha_limite_registro": "2025-01-01",
+        "fecha_entrega_resultados": "2025-01-15",
+        "max_participantes": 115
+    }]
+    ```
+
+    ### **Method: POST**
+
+    #### **Headers: Bearer Access Token**
+
+    #### REQUEST
+    ```json
+    {
+    "lugar_convocatoria": "Aguascalientes",
+    "fecha_limite_registro": "25-12-12", (YYYY-MM-DD)
+    "fecha_entrega_resultados": "25-12-24", (YYYY-MM-DD)
+    "max_participantes": "10"
+    }
+    ```
+
+    #### RESPONSE
+    ```json
+    {
+    "id": 33,
+    "lugar_convocatoria": "Aguascalientes",
+    "fecha_limite_registro": "2023-12-12",
+    "fecha_entrega_resultados": "2023-12-24",
+    "max_participantes": 10
+    }
+    ```
+
