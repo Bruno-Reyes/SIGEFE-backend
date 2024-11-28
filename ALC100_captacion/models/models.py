@@ -40,8 +40,10 @@ class DetallesUsuario(models.Model):
         ('Banco Azteca', 'Banco Azteca'),
         ('BanCoppel', 'BanCoppel'),
         ('Banco del Bajío', 'Banco del Bajío'),
+        ('Otro', 'Otro'),
     ]
     banco = models.CharField(max_length=50, choices=BANCO_OPCIONES)
+    clabe = models.CharField(max_length=18)
     NIVEL_ESTUDIOS_OPCIONES = [
         ('Primaria', 'Primaria'),
         ('Secundaria', 'Secundaria'),
@@ -157,4 +159,4 @@ class Inscripciones(models.Model):
     fecha_inscripcion = models.DateField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.usuario.username} inscrito en {self.convocatoria.lugar_convocatoria} el {self.fecha_inscripcion}"
+        return f"{self.usuario.email} inscrito en {self.convocatoria.lugar_convocatoria} el {self.fecha_inscripcion}"

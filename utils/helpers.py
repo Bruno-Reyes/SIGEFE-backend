@@ -22,39 +22,27 @@ def generar_password_prueba():
     return password
 
 def generar_data_users(path_file, n_users):
+    mails = []
+    passwords = []
     for _ in range(n_users):
         # Generar un email de prueba
-        email = generar_email_prueba()
+        mails.append(generar_email_prueba())
         # Generar una contraseña de prueba
-        password = generar_password_prueba()
+        passwords.append(generar_password_prueba())
+    
+    mails = set(mails)
+    # Cortar el arreglo de contraseñas para que tenga la misma longitud que el de emails
+    passwords = passwords[:len(mails)]
+
+    if len(mails) == len(passwords):
+        
         # Guardar el email y contraseña en un archivo
         with open(path_file, "a") as f:
-            f.write(f"{email}-{password}\n")
-        f.close()
+            for email, password in zip(mails, passwords):
+                f.write(f"{email}-{password}\n")
+            f.close()
+        print('Creación de información usuarios exitosa')
     
-    with open(path_file, 'r') as file:
-        lineas = file.readlines()
-
-    correos = set()
-    duplicados = []
-
-    for linea in lineas:
-        email, _ = linea.split('-')
-        if email in correos:
-            duplicados.append(email)
-        else:
-            correos.add(email)
-
-    if duplicados:
-        print("Correos duplicados encontrados:")
-        for correo in duplicados:
-            print(correo)
-    else:
-        print("No se encontraron correos duplicados.")
-
-# Ejemplo de uso
-# generar_data_users('utils/data_users.txt', 5000)
-
 # Genera una funcion para crear un CURP aleasorio
 def generar_curp():
     vocales = "AEIOU"
@@ -132,6 +120,12 @@ def generar_banco():
     bancos = ["BBVA", "Banamex", "Santander", "HSBC", "Banorte", "Scotiabank", "Inbursa", "Banco Azteca", "BanCoppel", "Banco del Bajío"]
     banco = random.choice(bancos)
     return banco
+
+def generar_clabe_bancaria():
+    clabe = ""
+    for _ in range(18):
+        clabe += str(random.randint(0, 9))
+    return clabe
 
 def generar_nivel_estudios():
     niveles = ["Primaria", "Secundaria", "Preparatoria", "Licenciatura"]
@@ -255,6 +249,7 @@ def CREAR_DETALLES_USUARIO():
     detalles["peso"] = generar_peso()
     detalles["estatura"] = generar_estatura()
     detalles["banco"] = generar_banco()
+    detalles["clabe"] = generar_clabe_bancaria()
     detalles["nivel_estudios"] = generar_nivel_estudios()
     detalles["nivel_estudios_deseado"] = detalles["nivel_estudios"]
     detalles["experiencia_ciencia"] = generar_experiencia_ciencia()
