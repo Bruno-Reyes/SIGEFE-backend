@@ -22,8 +22,6 @@ class DetallesUsuario(models.Model):
         ('O', 'Otro'),
     ]
     genero = models.CharField(max_length=1, choices=GENERO_OPCIONES)
-
-    nacionalidad = models.CharField(max_length=50)
     talla_playera = models.CharField(max_length=5)
     talla_pantalon = models.CharField(max_length=5)
     talla_calzado = models.CharField(max_length=5)
@@ -43,7 +41,7 @@ class DetallesUsuario(models.Model):
         ('Otro', 'Otro'),
     ]
     banco = models.CharField(max_length=50, choices=BANCO_OPCIONES)
-    clabe = models.CharField(max_length=18)
+    clabe = models.CharField(max_length=18, null=True, blank=True)
     NIVEL_ESTUDIOS_OPCIONES = [
         ('Primaria', 'Primaria'),
         ('Secundaria', 'Secundaria'),
@@ -77,7 +75,18 @@ class DetallesUsuario(models.Model):
         ('Apoyar y participar en programas sociales', 'Apoyar en programas sociales'),
     ]
     razones_interes = models.CharField(max_length=100, choices=RAZONES_INTERES_OPCIONES)
-    profesion_interes = models.CharField(max_length=50)
+
+    PROFESIONES_INTERES_OPCIONES = [
+        ('Ingeniería', 'Ingeniería'),
+        ('Ciencias de la Salud', 'Ciencias de la Salud'),
+        ('Ciencias Sociales', 'Ciencias Sociales'),
+        ('Ciencias Exactas', 'Ciencias Exactas'),
+        ('Ciencias Naturales', 'Ciencias Naturales'),
+        ('Artes', 'Artes'),
+        ('Humanidades', 'Humanidades'),
+        ('Otro', 'Otro'),
+    ]
+    profesion_interes = models.CharField(max_length=50, choices=PROFESIONES_INTERES_OPCIONES)
     INTERES_INCORPORACION_OPCIONES = [
         ('Prácticas profesionales', 'Prácticas profesionales'),
         ('Servicio social', 'Servicio social'),

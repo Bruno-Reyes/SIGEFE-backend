@@ -36,7 +36,6 @@ def crear_candidatos(n : int):
                 apellido_materno = detalles["apellido_materno"],
                 fecha_nacimiento = detalles["fecha_nacimiento"],
                 genero = detalles["genero"],
-                nacionalidad = detalles["nacionalidad"],
                 talla_playera = detalles["talla_playera"],
                 talla_pantalon = detalles["talla_pantalon"],
                 talla_calzado = detalles["talla_calzado"],

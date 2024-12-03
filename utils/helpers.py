@@ -91,11 +91,6 @@ def generar_genero():
     genero = random.choice(generos)
     return genero
 
-def generar_nacionalidad():
-    nacionalidades = ["Mexicana", "Estadounidense", "Canadiense", "Española", "Francesa", "Alemana", "Italiana", "Argentina", "Brasileña", "Colombiana", "Chilena", "Peruana", "Ecuatoriana", "Venezolana", "Cubana", "Boliviana", "Paraguaya", "Uruguaya", "Panameña", "Costarricense", "Salvadoreña", "Guatemalteca", "Hondureña", "Nicaragüense", "Puertorriqueña", "Dominicana", "Haitiana", "Jamaicana", "Trinitense", "Barbadense", "Granadina", "Luciana", "Antiguana", "Barbudense", "Sanvicentino", "Dominiqués", "Santalucense", "Sanmartinense", "Sancristobaleño", "Nevisiano", "Beliceño", "Guayanés", "Surinamés", "Guyanés", "Figueroense", "Brasileño", "Colombiano", "Ecuatoriano", "Venezolano", "Peruano", "Chileno", "Boliviano", "Paraguayo", "Uruguayo", "Argentino", "Cubano", "Costarricense", "Salvadoreño", "Guatemalteco", "Hondureño", "Nicaragüense", "Panameño", "Puertorriqueño", "Dominicano", "Haitiano", "Jamaicano", "Trinitense", "Barbadense", "Granadino", "Luciano", "Antiguano", "Barbudense", "Sanvicentino", "Dominiqués", "Santalucense", "Sanmartinense", "Sancristobaleño", "Nevisiano", "Beliceño", "Guayanés", "Surinamés", "Guyanés", "Figueroense"]
-    nacionalidad = random.choice(nacionalidades)
-    return nacionalidad
-
 def generar_talla():
     tallas = ["XS", "S", "M", "L", "XL", "XXL"]
     talla = random.choice(tallas)
@@ -242,7 +237,6 @@ def CREAR_DETALLES_USUARIO():
     detalles["apellido_materno"] = generar_apellido()
     detalles["fecha_nacimiento"] = generar_fecha_nacimiento()
     detalles["genero"] = generar_genero()
-    detalles["nacionalidad"] = generar_nacionalidad()
     detalles["talla_playera"] = generar_talla()
     detalles["talla_pantalon"] = generar_talla()
     detalles["talla_calzado"] = generar_talla_calzado()
