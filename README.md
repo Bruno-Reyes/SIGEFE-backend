@@ -1,18 +1,34 @@
-## Lista de usuarios
+# Instrucciones de instalacion BACKEND
 
-- Lider para la Educacion Comunitaria
-- Aspirante a Lider para la Educacion Comunitaria
-- Coordinador Nacional de Recursos Humanos
-- Coordinador Academico
-- Auxiliar de operacion
-- Coordinador Nacional de Apoyo y Logistica
-- Coordinador Operativo
+## Instalacion
 
-Con un total de 7 usuarios.
+* Crear un entorno de ejecucion con conda o virtualenv
 
-# TODO
-* Generar un script para poblar toda la BD
-* Registrar candidato
+* Con el entorno activado, instalar las dependencias 
 
+```bash
+pip install -r requirements.txt
+```
 
-* Hacer Landing Page 
+* Si ya lo tienes instalado y te pide una libreria nueva, solamente vuelve a ejecutar el comando anterior
+
+## Ejecucion
+
+* Para esta fase, debes eliminar el archivo db.sqllite3
+
+* Ejecuta los siguientes comandos para crear las migrationes 
+
+```bash
+python manage.py makemigrations
+python manage.py migrate
+```
+
+* Los siguientes comandos son para poblar la BD
+```bash
+python manage.py shell < utils/poblar_db.py
+```
+
+* Finalmente, ejecutamos el servidor
+```bash
+python manage.py runserver
+```
