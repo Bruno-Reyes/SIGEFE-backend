@@ -22,8 +22,16 @@ class DetallesUsuario(models.Model):
         ('O', 'Otro'),
     ]
     genero = models.CharField(max_length=1, choices=GENERO_OPCIONES)
-    talla_playera = models.CharField(max_length=5)
-    talla_pantalon = models.CharField(max_length=5)
+    
+    TALLAS_OPCIONES = [
+        ('CH', 'Chica'),
+        ('M', 'Mediana'),
+        ('L', 'Grande'),
+        ('EG', 'Extra Grande'),
+    ]
+    talla_playera = models.CharField(max_length=12, choices=TALLAS_OPCIONES)
+    talla_pantalon = models.CharField(max_length=12, choices=TALLAS_OPCIONES)
+    
     talla_calzado = models.CharField(max_length=5)
     peso = models.DecimalField(max_digits=5, decimal_places=2)
     estatura = models.DecimalField(max_digits=5, decimal_places=2)
