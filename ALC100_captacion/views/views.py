@@ -28,7 +28,15 @@ class ConvocatoriasActivas(APIView):
         convocatorias = Convocatoria.objects.filter(fecha_limite_registro__gte=fecha_actual)
         serializer = ConvocatoriaSerializer(convocatorias, many=True)
         return Response(serializer.data)
-    
+
+@permission_classes([AllowAny])  
+class ObtenerActivas(APIView):
+    def get(self, request):
+        fecha_actual = timezone.now().date()
+        convocatorias = Convocatoria.objects.filter(fecha_limite_registro__gte=fecha_actual)
+        serializer = ConvocatoriaSerializer(convocatorias, many=True)
+        return Response(serializer.data)
+
 @permission_classes([AllowAny])
 class RegistrarCandidato(APIView):
     def post(self, request):

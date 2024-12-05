@@ -22,15 +22,17 @@ class DetallesUsuario(models.Model):
         ('O', 'Otro'),
     ]
     genero = models.CharField(max_length=1, choices=GENERO_OPCIONES)
-    
+
     TALLAS_OPCIONES = [
         ('CH', 'Chica'),
         ('M', 'Mediana'),
-        ('L', 'Grande'),
+        ('G', 'Grande'),
         ('EG', 'Extra Grande'),
     ]
-    talla_playera = models.CharField(max_length=12, choices=TALLAS_OPCIONES)
-    talla_pantalon = models.CharField(max_length=12, choices=TALLAS_OPCIONES)
+
+    talla_playera = models.CharField(max_length=2, choices=TALLAS_OPCIONES)
+    talla_pantalon = models.CharField(max_length=2, choices=TALLAS_OPCIONES)
+
     
     talla_calzado = models.CharField(max_length=5)
     peso = models.DecimalField(max_digits=5, decimal_places=2)
@@ -50,11 +52,15 @@ class DetallesUsuario(models.Model):
     ]
     banco = models.CharField(max_length=50, choices=BANCO_OPCIONES)
     clabe = models.CharField(max_length=18, null=True, blank=True)
+
     NIVEL_ESTUDIOS_OPCIONES = [
+        ('Preescolar', 'Preescolar'),
         ('Primaria', 'Primaria'),
         ('Secundaria', 'Secundaria'),
         ('Preparatoria', 'Preparatoria'),
         ('Licenciatura', 'Licenciatura'),
+        ('Maestría', 'Maestría'),
+        ('Doctorado', 'Doctorado'),
     ]
     nivel_estudios = models.CharField(max_length=50, choices=NIVEL_ESTUDIOS_OPCIONES)
     nivel_estudios_deseado = models.CharField(max_length=50, choices=NIVEL_ESTUDIOS_OPCIONES)
@@ -63,7 +69,7 @@ class DetallesUsuario(models.Model):
         ('Fisica', 'Física'),
         ('Quimica', 'Química'),
         ('Otro', 'Otro'),
-        ('Ninugna', 'Ninguna'),
+        ('Ninguna', 'Ninguna'),
     ]
     experiencia_ciencia = models.CharField(max_length=50, choices=EXPERIENCIA_CIENCIA_OPCIONES)
     EXPERIENCIA_ARTE_OPCIONES = [
@@ -141,11 +147,10 @@ class DetallesUsuario(models.Model):
     estado = models.CharField(max_length=50, choices=ESTADOS_OPCIONES)
     colonia = models.CharField(max_length=50)
     municipio = models.CharField(max_length=50)
-    localidad = models.CharField(max_length=50)
+    localidad = models.CharField(max_length=50, blank=True)
     calle = models.CharField(max_length=50)
     numero_exterior = models.CharField(max_length=10)
     numero_interior = models.CharField(max_length=10, blank=True)
-    estado_deseado = models.CharField(max_length=50, choices=ESTADOS_OPCIONES)
     municipio_deseado = models.CharField(max_length=50)
 
     certificado = models.CharField(max_length=50, blank=True)
