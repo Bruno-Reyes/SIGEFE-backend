@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'rest_framework',
+    'storages',
     'rest_framework.authtoken',
     'ALC000_sistema_base',
     'ALC100_captacion',
@@ -168,3 +169,7 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'ALC000_sistema_base.Usuario'
+
+# Configuración del backend de almacenamiento
+DEFAULT_FILE_STORAGE = 'storages.backends.azure_storage.AzureStorage'
+

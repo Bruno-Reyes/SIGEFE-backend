@@ -19,4 +19,19 @@ def db_info():
     inscripciones = Inscripciones.objects.all()
     print(f"Inscripciones: {len(inscripciones)}")
 
-db_info()
+# db_info()
+
+from ALC100_captacion.models.models import DetallesUsuario, Inscripciones
+def mostrar_detalles_usuarios():
+    usuarios = DetallesUsuario.objects.all()
+    for usuario in usuarios:
+        print(usuario)
+
+mostrar_detalles_usuarios()
+
+def mostrar_inscripciones():
+    inscripciones = Inscripciones.objects.all()
+    for inscripcion in inscripciones:
+        print(inscripcion)
+
+# mostrar_inscripciones()

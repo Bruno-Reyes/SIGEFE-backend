@@ -37,6 +37,16 @@ class DetallesUsuario(models.Model):
     talla_calzado = models.CharField(max_length=5)
     peso = models.DecimalField(max_digits=5, decimal_places=2)
     estatura = models.DecimalField(max_digits=5, decimal_places=2)
+
+    AFECCIONES_OPCIONES = [
+        ('Diabetes', 'Diabetes'),
+        ('Hipertension', 'Hipertension'),
+        ('Asma', 'Asma'),
+        ('Otro', 'Otro'),
+        ('Ninguna', 'Ninguna')
+    ]
+    afecciones = models.CharField(max_length=15, choices=AFECCIONES_OPCIONES, default='Ninguna')    
+
     BANCO_OPCIONES = [
         ('BBVA', 'BBVA'),
         ('Banamex', 'Banamex'),
@@ -151,14 +161,14 @@ class DetallesUsuario(models.Model):
     calle = models.CharField(max_length=50)
     numero_exterior = models.CharField(max_length=10)
     numero_interior = models.CharField(max_length=10, blank=True)
-    municipio_deseado = models.CharField(max_length=50)
 
-    certificado = models.CharField(max_length=50, blank=True)
-    identificacion = models.CharField(max_length=50, blank=True)
-    estado_cuenta = models.CharField(max_length=50, blank=True)
+    certificado = models.CharField(max_length=500, blank=True)
+    identificacion = models.CharField(max_length=500, blank=True)
+    estado_cuenta = models.CharField(max_length=500, blank=True)
 
     def __str__(self):
-        return f"Detalles de {self.usuario.username}" if self.usuario else "Detalles no asignados"
+        # Retorna todos los datos de detalles de usuario de forma legible
+        return f"{self.nombres} {self.apellido_paterno} {self.apellido_materno} - {self.curp} - {self.fecha_nacimiento} - {self.genero} - {self.talla_playera} - {self.talla_pantalon} - {self.talla_calzado} - {self.peso} - {self.estatura} - {self.afecciones} - {self.banco} - {self.clabe} - {self.nivel_estudios} - {self.nivel_estudios_deseado} - {self.experiencia_ciencia} - {self.experiencia_arte} - {self.interes_desarrollo_comunitario} - {self.razones_interes} - {self.profesion_interes} - {self.interes_incorporacion} - {self.codigo_postal} - {self.estado} - {self.colonia} - {self.municipio} - {self.localidad} - {self.calle} - {self.numero_exterior} - {self.numero_interior} - {self.certificado} - {self.identificacion} - {self.estado_cuenta}"
 
 # Modelo Convocatoria
 class Convocatoria(models.Model):
@@ -181,4 +191,4 @@ class Inscripciones(models.Model):
     fecha_inscripcion = models.DateField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.usuario.email} inscrito en {self.convocatoria.lugar_convocatoria} el {self.fecha_inscripcion}"
+        return f"{self.usuario} inscrito en {self.convocatoria.lugar_convocatoria} el {self.fecha_inscripcion}"

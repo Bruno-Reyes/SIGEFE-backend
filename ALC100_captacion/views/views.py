@@ -7,6 +7,8 @@ from ALC100_captacion.serializers import ConvocatoriaSerializer
 from django.utils import timezone
 from rest_framework.permissions import AllowAny
 from rest_framework.decorators import permission_classes
+from ALC100_captacion.services import subir_archivo_azure
+import json
 
 # Provisional
 from ALC000_sistema_base.models.models import Usuario
@@ -41,69 +43,78 @@ class ObtenerActivas(APIView):
 class RegistrarCandidato(APIView):
     def post(self, request):
         # Registrar candidato
-        email = request.data.get("email")
-        password = request.data.get("password")
-        print(email)
-        print(password)
+        values = json.loads(request.data.get("data") )
+        # Validar un unico email desde servidor
+        usuario = Usuario.objects.filter(email=values["correo"])
+        if usuario:
+            return Response({"detail": "El correo ya ha sido registrado"}, status=400)
+        else: 
+            # Extramos los archivos y los guardamos en azure
+            fichero_certificado = request.data.get("files[0]")
+            fichero_identificacion = request.data.get("files[1]")
+            fichero_estado_cuenta = request.data.get("files[2]")
 
-        # Crea un usuario con datos sinteticos
-        usuario = Usuario.objects.create_user(
-            email=email,
-            password=password,
-            tipo_usuario= TipoUsuario.ASPIRANTE_LEC,
-        )
-        detalles = CREAR_DETALLES_USUARIO()
-        # Crea un candidato con datos sinteticos            
-        detallesUsuario = DetallesUsuario.objects.create(                
-            usuario = usuario,
-            curp = detalles["curp"],
-            nombres = detalles["nombres"],
-            apellido_paterno = detalles["apellido_paterno"],
-            apellido_materno = detalles["apellido_materno"],
-            fecha_nacimiento = detalles["fecha_nacimiento"],
-            genero = detalles["genero"],
-            nacionalidad = detalles["nacionalidad"],
-            talla_playera = detalles["talla_playera"],
-            talla_pantalon = detalles["talla_pantalon"],
-            talla_calzado = detalles["talla_calzado"],
-            peso = detalles["peso"],
-            estatura = detalles["estatura"],
-            banco = detalles["banco"],
-            nivel_estudios = detalles["nivel_estudios"],
-            nivel_estudios_deseado = detalles["nivel_estudios_deseado"],
-            experiencia_ciencia = detalles["experiencia_ciencia"],
-            experiencia_arte = detalles["experiencia_arte"],
-            interes_desarrollo_comunitario = detalles["interes_desarrollo_comunitario"],
-            razones_interes = detalles["razones_interes"],
-            profesion_interes = detalles["profesion_interes"],
-            interes_incorporacion = detalles["interes_incorporacion"],
-            codigo_postal = detalles["codigo_postal"],
-            estado = detalles["estado"],
-            colonia = detalles["colonia"],
-            municipio = detalles["municipio"],
-            localidad = detalles["localidad"],
-            calle = detalles["calle"],
-            numero_exterior = detalles["numero_exterior"],
-            numero_interior = detalles["numero_interior"],
-            estado_deseado = detalles["estado_deseado"],
-            municipio_deseado = detalles["municipio_deseado"],
-            certificado = detalles["certificado"],
-            identificacion = detalles["identificacion"],
-            estado_cuenta = detalles["estado_cuenta"])
+            # Subir archivos a azure
+            certificado_url = subir_archivo_azure(fichero_certificado, "certificados")
+            identificacion_url = subir_archivo_azure(fichero_identificacion, "identificaciones")
+            estado_cuenta_url = subir_archivo_azure(fichero_estado_cuenta, "cuentas")
 
-        # Inscribir candidato a convocatoria
-        print(DetallesUsuario)
-        # Convocatoria Detalles Fecha Inscripcion
-        convocatoria_id = request.data.get("convocatoria_id")
-        convocatoria = Convocatoria.objects.get(id=convocatoria_id)
-        fecha_inscripcion = timezone.now().date()
-        print(fecha_inscripcion)
-        print(convocatoria)
+            if not certificado_url or not identificacion_url or not estado_cuenta_url:
+                return Response({"detail": "Error al subir archivos"}, status=400)
+            else:
+                # Crea un usuario con datos sinteticos
+                usuario = Usuario.objects.create_user(
+                    email=values["correo"],
+                    password=values["contrasena"],
+                    tipo_usuario= TipoUsuario.ASPIRANTE_LEC,
+                )
+                
+                # Crea un candidato con datos sinteticos            
+                detallesUsuario = DetallesUsuario.objects.create(                
+                    usuario = usuario,
+                    curp = values["curp"],
+                    nombres = values["nombres"],
+                    apellido_paterno = values["apellido_paterno"],
+                    apellido_materno = values["apellido_materno"],
+                    fecha_nacimiento = values["fecha_nacimiento"].split("T")[0],
+                    genero = values["genero"],
+                    talla_playera = values["talla_playera"],
+                    talla_pantalon = values["talla_pantalon"],
+                    talla_calzado = values["talla_calzado"],
+                    peso = values["peso"],
+                    estatura = values["estatura"],
+                    afecciones = values["afecciones"],
+                    banco = values["banco"],
+                    clabe = values["clabe"],
+                    nivel_estudios = values["nivel_estudios"],
+                    nivel_estudios_deseado = values["nivel_estudios_deseado"],
+                    experiencia_ciencia = values["experiencia_ciencia"],
+                    experiencia_arte = values["experiencia_arte"],
+                    interes_desarrollo_comunitario = values["interes_comunitario"],
+                    razones_interes = values["razones_interes"],
+                    profesion_interes = values["profesion_interes"],
+                    interes_incorporacion = values["interes_incorporacion"],
+                    codigo_postal = values["codigo_postal"],
+                    estado = values["estado"],
+                    colonia = values["colonia"],
+                    municipio = values["municipio"],
+                    localidad = values["localidad"],
+                    calle = values["calle"],
+                    numero_exterior = values["numero_exterior"],
+                    numero_interior = values["numero_interior"],
+                    certificado = certificado_url,
+                    identificacion = identificacion_url,
+                    estado_cuenta = estado_cuenta_url)
 
-        inscripcion = Inscripciones.objects.create(
-            usuario = detallesUsuario,
-            convocatoria = convocatoria,
-            fecha_inscripcion = fecha_inscripcion
-        )
+                # Inscribir candidato a convocatoria
+                
+                # Convocatoria Detalles Fecha Inscripcion
+                convocatoria = Convocatoria.objects.get(id=values["convocatoria"])
+                fecha_inscripcion = timezone.now().date()
+                inscripcion = Inscripciones.objects.create(
+                    usuario = detallesUsuario,
+                    convocatoria = convocatoria,
+                    fecha_inscripcion = fecha_inscripcion
+                )
 
-        return Response({"message": "Candidato registrado exitosamente"})
+                return Response({"message": "Tu registro ha sido exitoso"})  
