@@ -165,10 +165,11 @@ class DetallesUsuario(models.Model):
     certificado = models.CharField(max_length=500, blank=True)
     identificacion = models.CharField(max_length=500, blank=True)
     estado_cuenta = models.CharField(max_length=500, blank=True)
+    aprobacion = models.BooleanField(default=False)
 
     def __str__(self):
         # Retorna todos los datos de detalles de usuario de forma legible
-        return f"{self.nombres} {self.apellido_paterno} {self.apellido_materno} - {self.curp} - {self.fecha_nacimiento} - {self.genero} - {self.talla_playera} - {self.talla_pantalon} - {self.talla_calzado} - {self.peso} - {self.estatura} - {self.afecciones} - {self.banco} - {self.clabe} - {self.nivel_estudios} - {self.nivel_estudios_deseado} - {self.experiencia_ciencia} - {self.experiencia_arte} - {self.interes_desarrollo_comunitario} - {self.razones_interes} - {self.profesion_interes} - {self.interes_incorporacion} - {self.codigo_postal} - {self.estado} - {self.colonia} - {self.municipio} - {self.localidad} - {self.calle} - {self.numero_exterior} - {self.numero_interior} - {self.certificado} - {self.identificacion} - {self.estado_cuenta}"
+        return f"{self.nombres} {self.apellido_paterno} {self.apellido_materno} - {self.curp} - {self.fecha_nacimiento} - {self.genero} - {self.talla_playera} - {self.talla_pantalon} - {self.talla_calzado} - {self.peso} - {self.estatura} - {self.afecciones} - {self.banco} - {self.clabe} - {self.nivel_estudios} - {self.nivel_estudios_deseado} - {self.experiencia_ciencia} - {self.experiencia_arte} - {self.interes_desarrollo_comunitario} - {self.razones_interes} - {self.profesion_interes} - {self.interes_incorporacion} - {self.codigo_postal} - {self.estado} - {self.colonia} - {self.municipio} - {self.localidad} - {self.calle} - {self.numero_exterior} - {self.numero_interior} - {self.certificado} - {self.identificacion} - {self.estado_cuenta}, {self.aprobacion}"    
 
 # Modelo Convocatoria
 class Convocatoria(models.Model):
@@ -176,6 +177,9 @@ class Convocatoria(models.Model):
     fecha_limite_registro = models.DateField()
     fecha_entrega_resultados = models.DateField()
     max_participantes = models.PositiveIntegerField()
+
+    def __str__(self):
+        return f"{self.id} Convocatoria  de: {self.lugar_convocatoria} con {self.max_participantes} \n Fecha limite de registro: {self.fecha_limite_registro} \n Fecha de entrega de resultados: {self.fecha_entrega_resultados}" 
 
 class Inscripciones(models.Model): 
     convocatoria = models.ForeignKey(

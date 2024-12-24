@@ -8,6 +8,7 @@ from django.utils import timezone
 from rest_framework.permissions import AllowAny
 from rest_framework.decorators import permission_classes
 from ALC100_captacion.services import subir_archivo_azure
+from ALC000_sistema_base.services import enviar_email
 import json
 
 # Provisional
@@ -117,4 +118,27 @@ class RegistrarCandidato(APIView):
                     fecha_inscripcion = fecha_inscripcion
                 )
 
+                send_notification = enviar_email(email=values["correo"], subject="Registro exitoso", message="Felicitaciones, tu registro ha sido exitoso. Pronto recibirás noticias nuestras.") 
+                
+
                 return Response({"message": "Tu registro ha sido exitoso"})  
+
+# Esta funcion debe enviar los pendientes de validacion usando un id de convocatoria como parametro
+
+
+class ObtenerAspirantes(APIView):
+    def get(self, request):
+    
+        # if not request.data.keys(): 
+        #     # Enviamos el nombre de las convocatorias junto con el total de aspirantes
+        #     fecha_actual = timezone.now().date()
+        #     convocatorias = Convocatoria.objects.filter(fecha_entrega_resultados__gte=fecha_actual)
+        #     # Imprimir el QuerySet de convocatorias
+        #     for convo in convocatorias:
+        #         print(convo)
+
+        return Response({"OK": "Tu registro ha sido exitoso"})  
+
+        # aspirantes = DetallesUsuario.objects.filter(aprobacion=False)
+        # serializer = DetallesUsuarioSerializer(aspirantes, many=True)
+        # return Response(serializer.data)

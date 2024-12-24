@@ -23,3 +23,4 @@ def subir_archivo_azure(FILE, CONTAINER_NAME:str):
     except Exception as e:
         print(f"Error subiendo archivo a Azure: {e}")
         return None
+    
