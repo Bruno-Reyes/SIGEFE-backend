@@ -1,3 +1,12 @@
+import os
+import django
+
+# Configura la variable de entorno con el módulo de configuración de tu proyecto
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'sigefe_back.settings')
+
+# Inicializa el entorno de Django
+django.setup()
+
 from ALC100_captacion.models.models import DetallesUsuario, Inscripciones, Convocatoria
 from ALC000_sistema_base.models.models import Usuario, TipoUsuario
 

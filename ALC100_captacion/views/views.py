@@ -8,6 +8,7 @@ from django.utils import timezone
 from rest_framework.permissions import AllowAny
 from rest_framework.decorators import permission_classes
 from ALC100_captacion.services import subir_archivo_azure
+from ALC200_asignacion.models.models import LEC
 import json
 
 # Provisional
@@ -42,19 +43,19 @@ class ObtenerActivas(APIView):
 @permission_classes([AllowAny])
 class RegistrarCandidato(APIView):
     def post(self, request):
-        # Registrar candidato
-        values = json.loads(request.data.get("data") )
-        # Validar un unico email desde servidor
+        values = json.loads(request.data.get("data"))
+        
+        # Validar un único correo desde servidor
         usuario = Usuario.objects.filter(email=values["correo"])
         if usuario:
             return Response({"detail": "El correo ya ha sido registrado"}, status=400)
-        else: 
-            # Extramos los archivos y los guardamos en azure
+        else:
+            # Extraer los archivos y guardarlos en Azure
             fichero_certificado = request.data.get("files[0]")
             fichero_identificacion = request.data.get("files[1]")
             fichero_estado_cuenta = request.data.get("files[2]")
 
-            # Subir archivos a azure
+            # Subir archivos a Azure
             certificado_url = subir_archivo_azure(fichero_certificado, "certificados")
             identificacion_url = subir_archivo_azure(fichero_identificacion, "identificaciones")
             estado_cuenta_url = subir_archivo_azure(fichero_estado_cuenta, "cuentas")
@@ -62,59 +63,68 @@ class RegistrarCandidato(APIView):
             if not certificado_url or not identificacion_url or not estado_cuenta_url:
                 return Response({"detail": "Error al subir archivos"}, status=400)
             else:
-                # Crea un usuario con datos sinteticos
+                # Crear un usuario con datos sintéticos
                 usuario = Usuario.objects.create_user(
                     email=values["correo"],
                     password=values["contrasena"],
-                    tipo_usuario= TipoUsuario.ASPIRANTE_LEC,
+                    tipo_usuario=TipoUsuario.ASPIRANTE_LEC,
                 )
                 
-                # Crea un candidato con datos sinteticos            
-                detallesUsuario = DetallesUsuario.objects.create(                
-                    usuario = usuario,
-                    curp = values["curp"],
-                    nombres = values["nombres"],
-                    apellido_paterno = values["apellido_paterno"],
-                    apellido_materno = values["apellido_materno"],
-                    fecha_nacimiento = values["fecha_nacimiento"].split("T")[0],
-                    genero = values["genero"],
-                    talla_playera = values["talla_playera"],
-                    talla_pantalon = values["talla_pantalon"],
-                    talla_calzado = values["talla_calzado"],
-                    peso = values["peso"],
-                    estatura = values["estatura"],
-                    afecciones = values["afecciones"],
-                    banco = values["banco"],
-                    clabe = values["clabe"],
-                    nivel_estudios = values["nivel_estudios"],
-                    nivel_estudios_deseado = values["nivel_estudios_deseado"],
-                    experiencia_ciencia = values["experiencia_ciencia"],
-                    experiencia_arte = values["experiencia_arte"],
-                    interes_desarrollo_comunitario = values["interes_comunitario"],
-                    razones_interes = values["razones_interes"],
-                    profesion_interes = values["profesion_interes"],
-                    interes_incorporacion = values["interes_incorporacion"],
-                    codigo_postal = values["codigo_postal"],
-                    estado = values["estado"],
-                    colonia = values["colonia"],
-                    municipio = values["municipio"],
-                    localidad = values["localidad"],
-                    calle = values["calle"],
-                    numero_exterior = values["numero_exterior"],
-                    numero_interior = values["numero_interior"],
-                    certificado = certificado_url,
-                    identificacion = identificacion_url,
-                    estado_cuenta = estado_cuenta_url)
+                # Crear un candidato con datos sintéticos
+                detallesUsuario = DetallesUsuario.objects.create(
+                    usuario=usuario,
+                    curp=values["curp"],
+                    nombres=values["nombres"],
+                    apellido_paterno=values["apellido_paterno"],
+                    apellido_materno=values["apellido_materno"],
+                    fecha_nacimiento=values["fecha_nacimiento"].split("T")[0],
+                    genero=values["genero"],
+                    talla_playera=values["talla_playera"],
+                    talla_pantalon=values["talla_pantalon"],
+                    talla_calzado=values["talla_calzado"],
+                    peso=values["peso"],
+                    estatura=values["estatura"],
+                    afecciones=values["afecciones"],
+                    banco=values["banco"],
+                    clabe=values["clabe"],
+                    nivel_estudios=values["nivel_estudios"],
+                    nivel_estudios_deseado=values["nivel_estudios_deseado"],
+                    experiencia_ciencia=values["experiencia_ciencia"],
+                    experiencia_arte=values["experiencia_arte"],
+                    interes_desarrollo_comunitario=values["interes_comunitario"],
+                    razones_interes=values["razones_interes"],
+                    profesion_interes=values["profesion_interes"],
+                    interes_incorporacion=values["interes_incorporacion"],
+                    codigo_postal=values["codigo_postal"],
+                    estado=values["estado"],
+                    colonia=values["colonia"],
+                    municipio=values["municipio"],
+                    localidad=values["localidad"],
+                    calle=values["calle"],
+                    numero_exterior=values["numero_exterior"],
+                    numero_interior=values["numero_interior"],
+                    certificado=certificado_url,
+                    identificacion=identificacion_url,
+                    estado_cuenta=estado_cuenta_url
+                )
 
-                # Inscribir candidato a convocatoria
+                # Crear un registro en el modelo LEC
+                lec = LEC.objects.create(
+                    nombre=values["nombres"],
+                    apellido_paterno=values["apellido_paterno"],
+                    apellido_materno=values["apellido_materno"],
+                    estado=values["estado"],
+                    municipio=values["municipio"],
+                    localidad=values["localidad"]
+                )
                 
-                # Convocatoria Detalles Fecha Inscripcion
+                # Inscribir candidato a convocatoria
                 convocatoria = Convocatoria.objects.get(id=values["convocatoria"])
                 fecha_inscripcion = timezone.now().date()
                 inscripcion = Inscripciones.objects.create(
-                    usuario = detallesUsuario,
-                    convocatoria = convocatoria,
-                    fecha_inscripcion = fecha_inscripcion
+                    usuario=detallesUsuario,
+                    convocatoria=convocatoria,
+                    fecha_inscripcion=fecha_inscripcion
                 )
 
-                return Response({"message": "Tu registro ha sido exitoso"})  
+                return Response({"message": "Tu registro ha sido exitoso"})
