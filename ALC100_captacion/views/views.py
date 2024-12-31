@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from ALC100_captacion.models.models import Convocatoria
 from ALC100_captacion.serializers import ConvocatoriaSerializer
+from ALC100_captacion.serializers import DetallesUsuarioSerializer
 from django.utils import timezone
 from rest_framework.permissions import AllowAny
 from rest_framework.decorators import permission_classes
@@ -128,3 +129,10 @@ class RegistrarCandidato(APIView):
                 )
 
                 return Response({"message": "Tu registro ha sido exitoso"})
+            
+@permission_classes([AllowAny])
+class DetallesUsuarioListView(APIView):
+    def get(self, request):
+        detalles_usuarios = DetallesUsuario.objects.all()
+        serializer = DetallesUsuarioSerializer(detalles_usuarios, many=True)
+        return Response(serializer.data)
