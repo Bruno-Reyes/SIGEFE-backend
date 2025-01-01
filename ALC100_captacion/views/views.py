@@ -136,3 +136,26 @@ class DetallesUsuarioListView(APIView):
         detalles_usuarios = DetallesUsuario.objects.all()
         serializer = DetallesUsuarioSerializer(detalles_usuarios, many=True)
         return Response(serializer.data)
+    
+@permission_classes([AllowAny])
+class CambiarEstadoAceptacion(APIView):
+    def patch(self, request, pk, action=None):
+        try:
+            # Obtener el objeto DetallesUsuario
+            detalles_usuario = DetallesUsuario.objects.get(pk=pk)
+        except DetallesUsuario.DoesNotExist:
+            return Response({"error": "DetallesUsuario no encontrado."})
+
+        # Determinar el estado basado en la acción
+        if action == "aceptar":
+            detalles_usuario.estado_aceptacion = "Aceptado"
+        elif action == "rechazar":
+            detalles_usuario.estado_aceptacion = "Rechazado"
+        else:
+            return Response({"error": "Acción no válida."})
+
+        # Guardar el cambio
+        detalles_usuario.save()
+        return Response(
+            {"mensaje": f"Estado cambiado a {detalles_usuario.estado_aceptacion}."},
+        )
