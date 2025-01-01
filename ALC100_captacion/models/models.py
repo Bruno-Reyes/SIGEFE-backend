@@ -154,6 +154,7 @@ class DetallesUsuario(models.Model):
         ( 'Yucatan', 'Yucatán'),
         ( 'Zacatecas', 'Zacatecas')
     ]
+
     estado = models.CharField(max_length=50, choices=ESTADOS_OPCIONES)
     colonia = models.CharField(max_length=50)
     municipio = models.CharField(max_length=50)
@@ -165,6 +166,17 @@ class DetallesUsuario(models.Model):
     certificado = models.CharField(max_length=500, blank=True)
     identificacion = models.CharField(max_length=500, blank=True)
     estado_cuenta = models.CharField(max_length=500, blank=True)
+
+    ESTADO_ACEPTACION_OPCIONES = [
+        ('Aceptado', 'Aceptado'),
+        ('Rechazado', 'Rechazado'),
+        ('Pendiente', 'Pendiente'),
+    ]
+    estado_aceptacion = models.CharField(
+        max_length=10,
+        choices=ESTADO_ACEPTACION_OPCIONES,
+        default='Pendiente'
+    )
 
     def __str__(self):
         # Retorna todos los datos de detalles de usuario de forma legible

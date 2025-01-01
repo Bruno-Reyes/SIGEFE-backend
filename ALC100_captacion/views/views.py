@@ -106,7 +106,7 @@ class RegistrarCandidato(APIView):
                     numero_interior=values["numero_interior"],
                     certificado=certificado_url,
                     identificacion=identificacion_url,
-                    estado_cuenta=estado_cuenta_url
+                    estado_cuenta=estado_cuenta_url,
                 )
 
                 # Crear un registro en el modelo LEC
@@ -116,7 +116,7 @@ class RegistrarCandidato(APIView):
                     apellido_materno=values["apellido_materno"],
                     estado=values["estado"],
                     municipio=values["municipio"],
-                    localidad=values["localidad"]
+                    localidad=values["localidad"],
                 )
                 
                 # Inscribir candidato a convocatoria
