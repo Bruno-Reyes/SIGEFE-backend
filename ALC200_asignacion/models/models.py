@@ -8,6 +8,10 @@ class LEC(models.Model):
     estado = models.CharField(max_length=100)
     municipio = models.CharField(max_length=100)
     localidad = models.CharField(max_length=100)
+    centro_asignado = models.ForeignKey('CentroComunitario', on_delete=models.SET_NULL, null=True, blank=True)
+    cct_centro_asignado = models.CharField(max_length=100, null=True, blank=True)
+    estado_centro_asignado = models.CharField(max_length=100, null=True, blank=True)
+    municipio_centro_asignado = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
         return f"{self.nombre} {self.apellido_paterno} {self.apellido_materno}"

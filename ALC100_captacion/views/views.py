@@ -10,6 +10,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.decorators import permission_classes
 from ALC100_captacion.services import subir_archivo_azure
 from ALC200_asignacion.models.models import LEC
+from django.db import models
 import json
 
 # Provisional
@@ -26,26 +27,32 @@ class ConvocatoriaViewSet(viewsets.ModelViewSet):
 
 # Endpoint para obtener la lista de convocatorias activas
 # GET /api/convocatorias/activas/
+
+
 class ConvocatoriasActivas(APIView):
     def get(self, request):
         fecha_actual = timezone.now().date()
-        convocatorias = Convocatoria.objects.filter(fecha_limite_registro__gte=fecha_actual)
+        convocatorias = Convocatoria.objects.filter(
+            fecha_limite_registro__gte=fecha_actual)
         serializer = ConvocatoriaSerializer(convocatorias, many=True)
         return Response(serializer.data)
 
-@permission_classes([AllowAny])  
+
+@permission_classes([AllowAny])
 class ObtenerActivas(APIView):
     def get(self, request):
         fecha_actual = timezone.now().date()
-        convocatorias = Convocatoria.objects.filter(fecha_limite_registro__gte=fecha_actual)
+        convocatorias = Convocatoria.objects.filter(
+            fecha_limite_registro__gte=fecha_actual)
         serializer = ConvocatoriaSerializer(convocatorias, many=True)
         return Response(serializer.data)
+
 
 @permission_classes([AllowAny])
 class RegistrarCandidato(APIView):
     def post(self, request):
         values = json.loads(request.data.get("data"))
-        
+
         # Validar un único correo desde servidor
         usuario = Usuario.objects.filter(email=values["correo"])
         if usuario:
@@ -57,9 +64,12 @@ class RegistrarCandidato(APIView):
             fichero_estado_cuenta = request.data.get("files[2]")
 
             # Subir archivos a Azure
-            certificado_url = subir_archivo_azure(fichero_certificado, "certificados")
-            identificacion_url = subir_archivo_azure(fichero_identificacion, "identificaciones")
-            estado_cuenta_url = subir_archivo_azure(fichero_estado_cuenta, "cuentas")
+            certificado_url = subir_archivo_azure(
+                fichero_certificado, "certificados")
+            identificacion_url = subir_archivo_azure(
+                fichero_identificacion, "identificaciones")
+            estado_cuenta_url = subir_archivo_azure(
+                fichero_estado_cuenta, "cuentas")
 
             if not certificado_url or not identificacion_url or not estado_cuenta_url:
                 return Response({"detail": "Error al subir archivos"}, status=400)
@@ -70,7 +80,7 @@ class RegistrarCandidato(APIView):
                     password=values["contrasena"],
                     tipo_usuario=TipoUsuario.ASPIRANTE_LEC,
                 )
-                
+
                 # Crear un candidato con datos sintéticos
                 detallesUsuario = DetallesUsuario.objects.create(
                     usuario=usuario,
@@ -117,40 +127,42 @@ class RegistrarCandidato(APIView):
                     estado=values["estado"],
                     municipio=values["municipio"],
                     localidad=values["localidad"],
+                    centro_asignado=models.ForeignKey('CentroComunitario', on_delete=models.SET_NULL, null=True, blank=True),
                 )
-                
+
                 # Inscribir candidato a convocatoria
-                convocatoria = Convocatoria.objects.get(id=values["convocatoria"])
-                fecha_inscripcion = timezone.now().date()
-                inscripcion = Inscripciones.objects.create(
+                convocatoria=Convocatoria.objects.get(
+                    id=values["convocatoria"])
+                fecha_inscripcion=timezone.now().date()
+                inscripcion=Inscripciones.objects.create(
                     usuario=detallesUsuario,
                     convocatoria=convocatoria,
                     fecha_inscripcion=fecha_inscripcion
                 )
 
                 return Response({"message": "Tu registro ha sido exitoso"})
-            
-@permission_classes([AllowAny])
+
+@ permission_classes([AllowAny])
 class DetallesUsuarioListView(APIView):
     def get(self, request):
-        detalles_usuarios = DetallesUsuario.objects.all()
-        serializer = DetallesUsuarioSerializer(detalles_usuarios, many=True)
+        detalles_usuarios=DetallesUsuario.objects.all()
+        serializer=DetallesUsuarioSerializer(detalles_usuarios, many=True)
         return Response(serializer.data)
-    
-@permission_classes([AllowAny])
+
+@ permission_classes([AllowAny])
 class CambiarEstadoAceptacion(APIView):
     def patch(self, request, pk, action=None):
         try:
             # Obtener el objeto DetallesUsuario
-            detalles_usuario = DetallesUsuario.objects.get(pk=pk)
+            detalles_usuario=DetallesUsuario.objects.get(pk=pk)
         except DetallesUsuario.DoesNotExist:
             return Response({"error": "DetallesUsuario no encontrado."})
 
         # Determinar el estado basado en la acción
         if action == "aceptar":
-            detalles_usuario.estado_aceptacion = "Aceptado"
+            detalles_usuario.estado_aceptacion="Aceptado"
         elif action == "rechazar":
-            detalles_usuario.estado_aceptacion = "Rechazado"
+            detalles_usuario.estado_aceptacion="Rechazado"
         else:
             return Response({"error": "Acción no válida."})
 

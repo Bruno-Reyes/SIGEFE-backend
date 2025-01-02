@@ -23,5 +23,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/auth/', include('ALC000_sistema_base.urls')),
     path('api/captacion/', include('ALC100_captacion.urls')),
-    path('api/asignacion/', include('ALC200_asignacion.urls'))
-]
+    path('api/asignacion/', include('ALC200_asignacion.urls')),
+    ]

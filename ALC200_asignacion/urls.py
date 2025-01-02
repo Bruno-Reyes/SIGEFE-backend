@@ -1,8 +1,12 @@
 # ALC200_asignacion/urls.py
 from django.urls import path
-from ALC200_asignacion.views.views import LECListView, CentroComunitarioListView
+from ALC200_asignacion.views.views import LECListView, CentroComunitarioListView, AsignarCentroLEC, EliminarLECView
+
 
 urlpatterns = [
     path('lecs/', LECListView.as_view(), name='lec-list'),  # Ruta para obtener los LEC
     path('centros/', CentroComunitarioListView.as_view(), name='centro-list'),  # Ruta para obtener los centros comunitarios
+    path('asignar-lec/', AsignarCentroLEC.as_view(), name='asignar_lec'), # Ruta para asignar un centro a un LEC
+    path('eliminar-lec/<int:lec_id>/', EliminarLECView.as_view(), name='eliminar-lec')
+
 ]
