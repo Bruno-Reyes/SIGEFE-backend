@@ -10,9 +10,4 @@
 
 Con un total de 7 usuarios.
 
-# TODO
-* Generar un script para poblar toda la BD
-* Registrar candidato
-
-
-* Hacer Landing Page 
+# Reenviar .env

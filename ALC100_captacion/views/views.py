@@ -6,19 +6,21 @@ from ALC100_captacion.models.models import Convocatoria
 from ALC100_captacion.serializers import ConvocatoriaSerializer
 from ALC100_captacion.serializers import DetallesUsuarioSerializer
 from django.utils import timezone
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import permission_classes
 from ALC100_captacion.services import subir_archivo_azure
 from ALC200_asignacion.models.models import LEC
 from django.db import models
 import json
 
+
 # Provisional
 from ALC000_sistema_base.models.models import Usuario
 from ALC100_captacion.models.models import DetallesUsuario
 from ALC100_captacion.models.models import Inscripciones
-from utils.helpers import CREAR_DETALLES_USUARIO
 from ALC000_sistema_base.models.models import TipoUsuario
+from services.send_mail import authenticate, send_mail
+from utils.mensajes_predefinidos import mensaje_registro_exitoso
 
 
 class ConvocatoriaViewSet(viewsets.ModelViewSet):
@@ -119,16 +121,16 @@ class RegistrarCandidato(APIView):
                     estado_cuenta=estado_cuenta_url,
                 )
 
-                # Crear un registro en el modelo LEC
-                lec = LEC.objects.create(
-                    nombre=values["nombres"],
-                    apellido_paterno=values["apellido_paterno"],
-                    apellido_materno=values["apellido_materno"],
-                    estado=values["estado"],
-                    municipio=values["municipio"],
-                    localidad=values["localidad"],
-                    centro_asignado=models.ForeignKey('CentroComunitario', on_delete=models.SET_NULL, null=True, blank=True),
-                )
+                # # Crear un registro en el modelo LEC
+                # lec = LEC.objects.create(
+                #     nombre=values["nombres"],
+                #     apellido_paterno=values["apellido_paterno"],
+                #     apellido_materno=values["apellido_materno"],
+                #     estado=values["estado"],
+                #     municipio=values["municipio"],
+                #     localidad=values["localidad"],
+                #     centro_asignado=models.ForeignKey('CentroComunitario', on_delete=models.SET_NULL, null=True, blank=True),
+                # )
 
                 # Inscribir candidato a convocatoria
                 convocatoria=Convocatoria.objects.get(
@@ -139,17 +141,23 @@ class RegistrarCandidato(APIView):
                     convocatoria=convocatoria,
                     fecha_inscripcion=fecha_inscripcion
                 )
+                
+                # Enviar correo de confirmación
+                token = authenticate()
+                contenido = mensaje_registro_exitoso(values["nombres"])
+                send_mail(destination=values["correo"],subject='¡Registro SIGEFE exitoso!',body=contenido, token=token)
+                
 
                 return Response({"message": "Tu registro ha sido exitoso"})
 
-@ permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 class DetallesUsuarioListView(APIView):
     def get(self, request):
-        detalles_usuarios=DetallesUsuario.objects.all()
+        detalles_usuarios=DetallesUsuario.objects.filter(estado_aceptacion="Pendiente")
         serializer=DetallesUsuarioSerializer(detalles_usuarios, many=True)
         return Response(serializer.data)
 
-@ permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 class CambiarEstadoAceptacion(APIView):
     def patch(self, request, pk, action=None):
         try:

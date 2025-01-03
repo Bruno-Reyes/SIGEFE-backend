@@ -1,0 +1,3 @@
+def mensaje_registro_exitoso(nombre: str) -> str:
+    mensaje_registro = f'<div> <p>Hola <b>{nombre}</b></p> <p>Gracias por registrarte en nuestro sistema. Estamos emocionados de tenerte con nosotros, en los próximos días te haremos saber por este medio si tus datos fueron aprobados y los siguientes pasos. </p> <br> <p>Si no solicitaste este registro, por favor ignora este correo.</p> <p>Saludos cordiales,<br>El Equipo de SIGEFE</p></div>'
+    return mensaje_registro    

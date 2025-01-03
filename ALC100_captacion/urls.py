@@ -17,7 +17,6 @@ urlpatterns = [
     path('obtener-activas/', ObtenerActivas.as_view(), name='activas-list'),
     path('registrar-candidato/', RegistrarCandidato.as_view(), name='registrar-candidato'),
     path('candidatos/', DetallesUsuarioListView.as_view(), name='lista_candidatos'),
-
     # Ruta para aceptar o rechazar
     path('detalles_usuario/<int:pk>/<str:action>/', CambiarEstadoAceptacion.as_view(), name='cambiar_estado'),
 

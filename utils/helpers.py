@@ -37,7 +37,7 @@ def generar_data_users(path_file, n_users):
     if len(mails) == len(passwords):
         
         # Guardar el email y contraseña en un archivo
-        with open(path_file, "a") as f:
+        with open(path_file, "w") as f:
             for email, password in zip(mails, passwords):
                 f.write(f"{email}-{password}\n")
             f.close()
@@ -226,8 +226,11 @@ def generar_numero_interior():
     numero = random.randint(1, 100)
     return numero
 
-def generar_estado_deseado():
-    return random.choice(estados)
+def generar_afecciones():
+    afecciones = ["Diabetes", "Hipertensión", "Asma", "Otra", "Ninguna"]
+    # Elegir alguna afeccion donde la probabilidad de "ninguna" sea 70% y el resto que sea 7.5% cada una
+    afeccion = random.choices(afecciones, weights=[0.075, 0.075, 0.075, 0.075, 0.7], k=1)[0]
+    return afeccion
 
 def CREAR_DETALLES_USUARIO():
     detalles = {}
@@ -242,6 +245,7 @@ def CREAR_DETALLES_USUARIO():
     detalles["talla_calzado"] = generar_talla_calzado()
     detalles["peso"] = generar_peso()
     detalles["estatura"] = generar_estatura()
+    detalles["afecciones"] = generar_afecciones()
     detalles["banco"] = generar_banco()
     detalles["clabe"] = generar_clabe_bancaria()
     detalles["nivel_estudios"] = generar_nivel_estudios()
@@ -252,17 +256,18 @@ def CREAR_DETALLES_USUARIO():
     detalles["razones_interes"] = generar_razones_interes()
     detalles["profesion_interes"] = generar_profesion_interes()
     detalles["interes_incorporacion"] = generar_interes_incorporacion()
-    detalles["estado"],detalles["codigo_postal"]  = generar_codigo_estado_postal()
+    estado, cp = generar_codigo_estado_postal()
+    detalles["estado"] = estado
+    detalles["codigo_postal"]  = cp
     detalles["colonia"] = generar_colonia()
     detalles["municipio"] = generar_municipio()
     detalles["localidad"] = generar_localidad()
     detalles["calle"] = generar_calle()
     detalles["numero_exterior"] = generar_numero_exterior()
     detalles["numero_interior"] = generar_numero_interior()
-    detalles["estado_deseado"] = generar_estado_deseado()
-    detalles["municipio_deseado"] = generar_municipio()
     detalles["certificado"] = "/"
     detalles["identificacion"] = "/"
     detalles["estado_cuenta"] = "/"
+    detalles["estado_aceptacion"] = "Pendiente"
 
     return detalles
