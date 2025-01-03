@@ -29,5 +29,5 @@ class EquipoDisponibleCreateView(APIView):
         serializer = EquipoDisponibleSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors)
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
