@@ -1,5 +1,5 @@
 from ALC400_apoyos_economicos.models.models import PagoApoyo
-from ALC000_sistema_base.models.models import Usuario
+from ALC000_sistema_base.models.models import Usuario, TipoUsuario
 import random
 from datetime import datetime, timedelta
 
@@ -9,7 +9,7 @@ ESTADOS = ["pendiente", "completado", "rechazado"]
 
 def crear_pagos():
     # Obtener usuarios LEC disponibles
-    usuarios = Usuario.objects.filter(tipo_usuario="LEC")  # Cambia "LEC" 
+    usuarios = Usuario.objects.filter(tipo_usuario= TipoUsuario.LIDER_LEC)  # Cambiar a "LEC" 
     if not usuarios.exists():
         print("No hay usuarios disponibles para asignar pagos. Por favor, crea usuarios primero.")
         return

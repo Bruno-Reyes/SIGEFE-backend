@@ -4,7 +4,7 @@ from django.shortcuts import render
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import  AllowAny
 from rest_framework.decorators import permission_classes
 from django.utils import timezone
 from ALC400_apoyos_economicos.models.models import PagoApoyo
@@ -19,11 +19,11 @@ class PagoApoyoViewSet(viewsets.ModelViewSet):
     """
     queryset = PagoApoyo.objects.all()
     serializer_class = PagoApoyoSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def perform_create(self, serializer):
         # Solo el usuario con email autorizado puede registrar pagos
-        if self.request.user.email != "departamento.finanzas@conafe.com":
+        if self.request.user.email != "coord_nac_rrhh@example.com":
             return Response(
                 {"error": "No tienes permiso para registrar pagos."},
                 status=status.HTTP_403_FORBIDDEN
@@ -32,7 +32,7 @@ class PagoApoyoViewSet(viewsets.ModelViewSet):
 
 
 # API para registrar un nuevo pago
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 class RegistrarPagoAPIView(APIView):
     """
     Endpoint para que el usuario autorizado registre pagos a otros usuarios (LEC).
@@ -75,7 +75,7 @@ class RegistrarPagoAPIView(APIView):
 
 
 # API para listar pagos por usuario
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 class ListarPagosPorUsuario(APIView):
     """
     Endpoint para obtener pagos de un usuario específico.

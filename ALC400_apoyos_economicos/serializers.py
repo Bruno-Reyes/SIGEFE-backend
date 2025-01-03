@@ -11,6 +11,7 @@ class PagoApoyoSerializer(serializers.ModelSerializer):
     def validate_registrado_por(self, value):
         # Verificar si el usuario registrado tiene permiso
         if value != "coord_nac_rrhh@example.com":
+        #if value == "":
             raise serializers.ValidationError("Solo el usuario autorizado puede registrar pagos.")
         return value
 
