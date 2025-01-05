@@ -25,4 +25,5 @@ urlpatterns = [
     path('api/captacion/', include('ALC100_captacion.urls')),
     path('api/asignacion/', include('ALC200_asignacion.urls')),
     path('api/logistica/', include('ALC600_logistica.urls')),
+    path('api/pagos/', include('ALC400_apoyos_economicos.urls'))
 ]

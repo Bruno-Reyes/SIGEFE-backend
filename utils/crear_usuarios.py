@@ -38,6 +38,27 @@ def crear_usuarios():
     password='contraseña_segura',
     tipo_usuario=TipoUsuario.COORD_OPERATIVO
     )
+    
+    # Crear Coordinador Operativo
+    usuario_lider_lec1 = Usuario.objects.create_user(
+    email='lider_lec1@example.com',
+    password='contraseña_segura',
+    tipo_usuario=TipoUsuario.LIDER_LEC
+    )
+    
+    # Crear Coordinador Operativo
+    usuario_lider_lec2 = Usuario.objects.create_user(
+    email='lider_lec2@example.com',
+    password='contraseña_segura',
+    tipo_usuario=TipoUsuario.LIDER_LEC
+    )
+    
+    # Crear Coordinador Operativo
+    usuario_lider_lec3 = Usuario.objects.create_user(
+    email='lider_lec3@example.com',
+    password='contraseña_segura',
+    tipo_usuario=TipoUsuario.LIDER_LEC
+    )
 
     # Verificar que se crearon correctamente los usuarios
     for usuario in Usuario.objects.all():
