@@ -1,5 +1,6 @@
 # ALC200_asignacion/models/models.py
 from django.db import models
+from django.utils import timezone
 
 class LEC(models.Model):
     nombre = models.CharField(max_length=100)
@@ -12,6 +13,7 @@ class LEC(models.Model):
     cct_centro_asignado = models.CharField(max_length=100, null=True, blank=True)
     estado_centro_asignado = models.CharField(max_length=100, null=True, blank=True)
     municipio_centro_asignado = models.CharField(max_length=100, null=True, blank=True)
+    fecha_asignacion = models.DateTimeField(default=timezone.now)  # Registrar automáticamente la fecha de asignación
 
     def __str__(self):
         return f"{self.nombre} {self.apellido_paterno} {self.apellido_materno}"
@@ -29,3 +31,11 @@ class CentroComunitario(models.Model):
 
     def __str__(self):
         return self.clave_centro_trabajo
+
+class HistorialAsignacion(models.Model):
+    lec = models.ForeignKey(LEC, on_delete=models.CASCADE)
+    centro = models.ForeignKey(CentroComunitario, on_delete=models.CASCADE)
+    fecha_asignacion = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"{self.lec} asignado a {self.centro} el {self.fecha_asignacion}"

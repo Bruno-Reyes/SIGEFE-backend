@@ -2,7 +2,8 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from ..models.models import LEC, CentroComunitario
+from ..models.models import LEC, CentroComunitario, HistorialAsignacion
+from django.utils import timezone  # Importar timezone para obtener la fecha y hora actual
 
 class LECListView(APIView):
     def get(self, request, *args, **kwargs):
@@ -10,6 +11,9 @@ class LECListView(APIView):
         municipio = request.query_params.get('municipio', None)
         localidad = request.query_params.get('localidad', None)
         centro_asignado = request.query_params.get('centro_asignado', None)
+        nombre = request.query_params.get('nombre', None)
+        apellido_paterno = request.query_params.get('apellido_paterno', None)
+        apellido_materno = request.query_params.get('apellido_materno', None)
 
         lecs = LEC.objects.all()
 
@@ -22,6 +26,12 @@ class LECListView(APIView):
             lecs = lecs.filter(localidad=localidad)
         if centro_asignado:
             lecs = lecs.filter(centro_asignado_id=centro_asignado)
+        if nombre:
+            lecs = lecs.filter(nombre__icontains=nombre)
+        if apellido_paterno:
+            lecs = lecs.filter(apellido_paterno__icontains=apellido_paterno)
+        if apellido_materno:
+            lecs = lecs.filter(apellido_materno__icontains=apellido_materno)
 
         # Serializa los datos en formato JSON
         data = [
@@ -34,7 +44,8 @@ class LECListView(APIView):
                 "centro_asignado": lec.centro_asignado.clave_centro_trabajo if lec.centro_asignado else None,
                 "cct_centro_asignado": lec.cct_centro_asignado if lec.centro_asignado else None,
                 "estado_centro_asignado": lec.estado_centro_asignado if lec.centro_asignado else None,
-                "municipio_centro_asignado": lec.municipio_centro_asignado if lec.centro_asignado else None
+                "municipio_centro_asignado": lec.municipio_centro_asignado if lec.centro_asignado else None,
+                "fecha_asignacion": lec.fecha_asignacion.strftime("%Y-%m-%d %H:%M:%S") if lec.fecha_asignacion else None
             }
             for lec in lecs
         ]
@@ -93,7 +104,6 @@ class AsignarCentroLEC(APIView):
             lec = LEC.objects.get(id=lec_id)
             centro = CentroComunitario.objects.get(id=centro_id)
             
-
             # Verificar que el centro tiene vacantes disponibles
             if centro.vacantes <= 0:
                 return Response(
@@ -106,7 +116,15 @@ class AsignarCentroLEC(APIView):
             lec.cct_centro_asignado = centro.clave_centro_trabajo
             lec.estado_centro_asignado = centro.estado
             lec.municipio_centro_asignado = centro.municipio
+            lec.fecha_asignacion = timezone.now()  # Guardar la fecha y hora actual
             lec.save()
+
+            # Guardar en el historial de asignaciones
+            HistorialAsignacion.objects.create(
+                lec=lec,
+                centro=centro,
+                fecha_asignacion=lec.fecha_asignacion
+            )
 
             # Reducir las vacantes del centro
             centro.vacantes -= 1
@@ -143,6 +161,33 @@ class EliminarLECView(APIView):
             lec.save()
 
             return Response({"message": "LEC eliminado correctamente."}, status=status.HTTP_200_OK)
+        except LEC.DoesNotExist:
+            return Response({"error": "LEC no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class HistorialLECView(APIView):
+    def get(self, request):
+        nombre = request.query_params.get('nombre', None)
+        apellido_paterno = request.query_params.get('apellido_paterno', None)
+        apellido_materno = request.query_params.get('apellido_materno', None)
+
+        if not nombre or not apellido_paterno or not apellido_materno:
+            return Response({"error": "Se requieren nombre, apellido_paterno y apellido_materno."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            lec = LEC.objects.get(nombre=nombre, apellido_paterno=apellido_paterno, apellido_materno=apellido_materno)
+            historial = HistorialAsignacion.objects.filter(lec_id=lec.id).order_by('-fecha_asignacion')
+            data = [
+                {
+                    "centro": asignacion.centro.clave_centro_trabajo,
+                    "estado": asignacion.centro.estado,
+                    "municipio": asignacion.centro.municipio,
+                    "fecha_asignacion": asignacion.fecha_asignacion.strftime("%Y-%m-%d %H:%M:%S")
+                }
+                for asignacion in historial
+            ]
+            return Response(data, status=status.HTTP_200_OK)
         except LEC.DoesNotExist:
             return Response({"error": "LEC no encontrado."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
