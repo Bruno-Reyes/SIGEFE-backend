@@ -4,6 +4,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from ..models.models import LEC, CentroComunitario, HistorialAsignacion
 from django.utils import timezone  # Importar timezone para obtener la fecha y hora actual
+from services.send_mail import authenticate, send_mail
+
+from utils.mensajes_predefinidos import asignación_centro_exitoso
 
 class LECListView(APIView):
     def get(self, request, *args, **kwargs):
@@ -129,6 +132,19 @@ class AsignarCentroLEC(APIView):
             # Reducir las vacantes del centro
             centro.vacantes -= 1
             centro.save()
+
+            # Autenticar y enviar correo electrónico al LEC asignado
+            token = authenticate()
+            contenido = asignación_centro_exitoso(lec.email, lec.nombre, {
+                "nombre_turno": centro.nombre_turno,
+                "clave_centro_trabajo": centro.clave_centro_trabajo,
+                "estado": centro.estado,
+                "municipio": centro.municipio,
+                "nivel_educativo": centro.nivel_educativo,
+                "codigo_postal": centro.codigo_postal,
+                "domicilio": centro.domicilio
+            }, token)
+            send_mail(destination=lec.email, subject='¡Asignación de centro exitosa!', body=contenido, token=token) 
 
             return Response(
                 {"message": f"LEC {lec.nombre} asignado al centro {centro.clave_centro_trabajo} exitosamente."},

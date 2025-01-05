@@ -14,6 +14,7 @@ class LEC(models.Model):
     estado_centro_asignado = models.CharField(max_length=100, null=True, blank=True)
     municipio_centro_asignado = models.CharField(max_length=100, null=True, blank=True)
     fecha_asignacion = models.DateTimeField(default=timezone.now)  # Registrar automáticamente la fecha de asignación
+    email = models.EmailField(max_length=254, unique=True)  # No permitir valores nulos
 
     def __str__(self):
         return f"{self.nombre} {self.apellido_paterno} {self.apellido_materno}"
@@ -25,7 +26,7 @@ class CentroComunitario(models.Model):
     nombre_localidad = models.CharField(max_length=100) #Municipio
     codigo_postal = models.CharField(max_length=10)
     nombre_turno = models.CharField(max_length=100)
-    nivel_educativo = models.CharField(max_length=100)
+    nivel_educativo = models.CharField(max_length=100)  # Corregir a max_length
     domicilio = models.CharField(max_length=255)
     vacantes = models.IntegerField()
 
