@@ -13,6 +13,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='lec',
             name='email',
-            field=models.EmailField(default='lawliet37.ll@gmail.com', max_length=100),
+            field=models.EmailField(default='hola@gmail.com', max_length=100),
         ),
     ]
