@@ -108,7 +108,7 @@ def generar_peso():
 
 # Generar estatura entre 1.50 y 2.00 m
 def generar_estatura():
-    estatura = round(random.uniform(1.50, 2.00))
+    estatura = round(random.randint(150, 200))
     return estatura
 
 def generar_banco():
