@@ -1,5 +1,8 @@
 from ALC000_sistema_base.models.models import * # Importar todos los modelos
-
+from ALC100_captacion.models.models import *
+from ALC200_asignacion.models.models import *
+from ALC400_apoyos_economicos.models.models import *
+from ALC600_logistica.models.models import *
 
 def db_info():
     # Imprime la cantidad de usuarios en la base de datos
@@ -38,4 +41,3 @@ def mostrar_inscripciones():
 usuarios = Usuario.objects.all()
 for usuario in usuarios:
     print(usuario)
-    
