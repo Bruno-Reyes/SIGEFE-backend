@@ -10,9 +10,13 @@ class CustomAuthTokenSerializer(serializers.Serializer):
         password = data.get('password')
 
         user = authenticate(email=email, password=password)
-
+        # Obtenemos el tipo de usuario
         if user is None:
             raise serializers.ValidationError("Las credenciales son incorrectas.")
+        elif user.tipo_usuario == 'aspirante_lec':
+            raise serializers.ValidationError("Solo puedes iniciar sesión si fuiste asignado en un centro comunitario.")
+        
+        
 
         data['user'] = user
         return data

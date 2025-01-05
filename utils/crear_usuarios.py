@@ -3,13 +3,6 @@
 from ALC000_sistema_base.models.models import Usuario, TipoUsuario
 
 def crear_usuarios():
-    
-    # Crear usuario Aspirante a Líder para la Educación Comunitaria
-    usuario_aspirante = Usuario.objects.create_user(
-    email='aspirante@example.com',
-    password='contraseña_segura',
-    tipo_usuario=TipoUsuario.ASPIRANTE_LEC
-    )
 
     # Crear Coordinador Nacional de Recursos Humanos
     usuario_coord_nac_rrhh = Usuario.objects.create_user(

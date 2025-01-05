@@ -4,6 +4,7 @@ from ALC000_sistema_base.models.models import Usuario, TipoUsuario
 from django.utils import timezone
 from utils.helpers import CREAR_DETALLES_USUARIO, generar_data_users 
 from random import sample
+from utils.estados import estados
 
 # Cre una funcion que cree un usuario con datos sinteticos (email, password)
 def crear_candidatos(n : int):
@@ -41,6 +42,7 @@ def crear_candidatos(n : int):
                 talla_calzado = detalles["talla_calzado"],
                 peso = detalles["peso"],
                 estatura = detalles["estatura"],
+                afecciones = detalles["afecciones"],
                 banco = detalles["banco"],
                 clabe = detalles["clabe"],
                 nivel_estudios = detalles["nivel_estudios"],
@@ -59,8 +61,6 @@ def crear_candidatos(n : int):
                 calle = detalles["calle"],
                 numero_exterior = detalles["numero_exterior"],
                 numero_interior = detalles["numero_interior"],
-                estado_deseado = detalles["estado_deseado"],
-                municipio_deseado = detalles["municipio_deseado"],
                 certificado = detalles["certificado"],
                 identificacion = detalles["identificacion"],
                 estado_cuenta = detalles["estado_cuenta"])
@@ -77,10 +77,10 @@ def crear_candidatos(n : int):
 
         f.close()
 
-        # Imprimir todas las inscripcones
+        # Imprimir el total de todas las inscripcones
         inscripciones = Inscripciones.objects.all()
-        for inscripcion in inscripciones:
-            print(inscripcion)
+        inscripciones_total = inscripciones.count()
+        print(f"Total de inscripciones: {inscripciones_total}") 
 
         # Imprimir mensaje de exito
         print("Candidatos creados correctamente")

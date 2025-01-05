@@ -1,5 +1,4 @@
-from ALC100_captacion.models.models import DetallesUsuario, Inscripciones, Convocatoria
-from ALC000_sistema_base.models.models import Usuario, TipoUsuario
+from ALC000_sistema_base.models.models import * # Importar todos los modelos
 
 
 def db_info():
@@ -35,3 +34,8 @@ def mostrar_inscripciones():
         print(inscripcion)
 
 # mostrar_inscripciones()
+# Imprimir todos los registros de la tabla 'Usuario'
+usuarios = Usuario.objects.all()
+for usuario in usuarios:
+    print(usuario)
+    

@@ -154,6 +154,7 @@ class DetallesUsuario(models.Model):
         ( 'Yucatan', 'Yucatán'),
         ( 'Zacatecas', 'Zacatecas')
     ]
+
     estado = models.CharField(max_length=50, choices=ESTADOS_OPCIONES)
     colonia = models.CharField(max_length=50)
     municipio = models.CharField(max_length=50)
@@ -167,10 +168,20 @@ class DetallesUsuario(models.Model):
     estado_cuenta = models.CharField(max_length=500, blank=True)
     aprobacion = models.BooleanField(default=False)
 
+    ESTADO_ACEPTACION_OPCIONES = [
+        ('Aceptado', 'Aceptado'),
+        ('Rechazado', 'Rechazado'),
+        ('Pendiente', 'Pendiente'),
+    ]
+    estado_aceptacion = models.CharField(
+        max_length=10,
+        choices=ESTADO_ACEPTACION_OPCIONES,
+        default='Pendiente'
+    )
+
     def __str__(self):
         # Retorna todos los datos de detalles de usuario de forma legible
-        return f"{self.nombres} {self.apellido_paterno} {self.apellido_materno} - {self.curp} - {self.fecha_nacimiento} - {self.genero} - {self.talla_playera} - {self.talla_pantalon} - {self.talla_calzado} - {self.peso} - {self.estatura} - {self.afecciones} - {self.banco} - {self.clabe} - {self.nivel_estudios} - {self.nivel_estudios_deseado} - {self.experiencia_ciencia} - {self.experiencia_arte} - {self.interes_desarrollo_comunitario} - {self.razones_interes} - {self.profesion_interes} - {self.interes_incorporacion} - {self.codigo_postal} - {self.estado} - {self.colonia} - {self.municipio} - {self.localidad} - {self.calle} - {self.numero_exterior} - {self.numero_interior} - {self.certificado} - {self.identificacion} - {self.estado_cuenta}, {self.aprobacion}"    
-
+        return f"nombres:{self.nombres}\napellido paterno:{self.apellido_paterno}\napellido materno:{self.apellido_materno}\ncurp:{self.curp}\nfecha de nacimiento:{self.fecha_nacimiento}\ngénero:{self.genero}\ntalla de playera:{self.talla_playera}\ntalla de pantalón:{self.talla_pantalon}\ntalla de calzado:{self.talla_calzado}\npeso:{self.peso}\nestatura:{self.estatura}\nafecciones:{self.afecciones}\nbanco:{self.banco}\nclabe:{self.clabe}\nnivel de estudios:{self.nivel_estudios}\nnivel de estudios deseado:{self.nivel_estudios_deseado}\nexperiencia en ciencia:{self.experiencia_ciencia}\nexperiencia en arte:{self.experiencia_arte}\ninterés en desarrollo comunitario:{self.interes_desarrollo_comunitario}\nrazones de interés:{self.razones_interes}\nprofesión de interés:{self.profesion_interes}\ninterés en incorporación:{self.interes_incorporacion}\ncódigo postal:{self.codigo_postal}\nestado:{self.estado}\ncolonia:{self.colonia}\nmunicipio:{self.municipio}\nlocalidad:{self.localidad}\ncalle:{self.calle}\nnúmero exterior:{self.numero_exterior}\nnúmero interior:{self.numero_interior}\ncertificado:{self.certificado}\nidentificación:{self.identificacion}\nestado de cuenta:{self.estado_cuenta}\n---------------------------------------------------------------"
 # Modelo Convocatoria
 class Convocatoria(models.Model):
     lugar_convocatoria = models.CharField(max_length=50)
@@ -195,4 +206,4 @@ class Inscripciones(models.Model):
     fecha_inscripcion = models.DateField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.usuario} inscrito en {self.convocatoria.lugar_convocatoria} el {self.fecha_inscripcion}"
+        return f"\n{self.usuario} inscrito en {self.convocatoria.lugar_convocatoria} el {self.fecha_inscripcion}\n---------------------------------------------------------------"
