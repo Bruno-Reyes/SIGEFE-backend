@@ -22,7 +22,7 @@ def crear_pagos():
         concepto = random.choice(CONCEPTOS)
         monto = round(random.uniform(1000, 10000), 2)  # Monto entre 1,000 y 10,000
         estatus = random.choice(ESTADOS)
-        fecha_pago = datetime.now() - timedelta(days=random.randint(1, 365))  # Fecha aleatoria en el último año
+        fecha_pago = datetime.now() - timedelta(days=random.randint(1, 365))  # Fecha aleatoria en el último año 
 
         # Crear el registro de pago
         pago = PagoApoyo.objects.create(
