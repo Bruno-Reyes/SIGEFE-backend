@@ -46,21 +46,28 @@ def crear_usuarios():
     tipo_usuario=TipoUsuario.COORD_OPERATIVO
     )
     
-    # Crear Coordinador Operativo
+    # Crear Departamento de finanzas
+    usuario_dep_finanzas = Usuario.objects.create_user(
+    email='dep_finanzas@example.com',
+    password='contraseña_segura',
+    tipo_usuario=TipoUsuario.DEP_FINANZAS
+    )
+    
+    # Crear lider comunitario 1
     usuario_lider_lec1 = Usuario.objects.create_user(
     email='lider_lec1@example.com',
     password='contraseña_segura',
     tipo_usuario=TipoUsuario.LIDER_LEC
     )
     
-    # Crear Coordinador Operativo
+    # Crear lider comunitario 2
     usuario_lider_lec2 = Usuario.objects.create_user(
     email='lider_lec2@example.com',
     password='contraseña_segura',
     tipo_usuario=TipoUsuario.LIDER_LEC
     )
     
-    # Crear Coordinador Operativo
+    # Crear lider comunitario 3
     usuario_lider_lec3 = Usuario.objects.create_user(
     email='lider_lec3@example.com',
     password='contraseña_segura',

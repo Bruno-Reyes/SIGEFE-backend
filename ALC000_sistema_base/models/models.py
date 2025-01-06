@@ -33,6 +33,7 @@ class TipoUsuario(models.TextChoices):
     AUX_OPERACION = "aux_operacion", "Auxiliar de Operación"
     COORD_NAC_LOGISTICA = "coord_nac_logistica", "Coordinador Nacional de Apoyo y Logística"
     COORD_OPERATIVO = "coord_operativo", "Coordinador Operativo"
+    DEP_FINANZAS = "dep_finanzas", "Departamento de Finanzas"
 
 class Usuario(AbstractUser):
     username = None  # Eliminar el campo username

@@ -19,5 +19,9 @@ class PagoApoyoSerializer(serializers.ModelSerializer):
         if 'confirmacion_lec' in data and user.tipo_usuario != "LIDER_LEC":
             raise serializers.ValidationError("Solo los usuarios LIDER_LEC pueden modificar este campo.")
         
+        # Validar que solo `LIDER_LEC` puede modificar `confirmacion_lec`
+        if 'estatus' in data and user.email != "dep_finanzas@example.com":
+            raise serializers.ValidationError("Solo los usuarios de finanzas pueden modificar este campo.")
+        
         return data
 

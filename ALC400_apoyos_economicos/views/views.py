@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
+from rest_framework import serializers
 from ALC400_apoyos_economicos.models.models import PagoApoyo
 from ALC400_apoyos_economicos.serializers import PagoApoyoSerializer
 from ALC000_sistema_base.models.models import Usuario, TipoUsuario
@@ -25,6 +26,10 @@ class PagoApoyoViewSet(viewsets.ModelViewSet):
 
         # Si es `coord_nac_rrhh@example.com`, devuelve todos los pagos
         if user.email == "coord_nac_rrhh@example.com":
+            return PagoApoyo.objects.all()
+        
+        # Si es `coord_nac_rrhh@example.com`, devuelve todos los pagos
+        if user.email == "dep_finanzas@example.com":
             return PagoApoyo.objects.all()
 
         # Si es `LIDER_LEC`, devuelve solo sus pagos
@@ -73,6 +78,19 @@ class PagoApoyoViewSet(viewsets.ModelViewSet):
                 )
             # Permitir la actualización de `confirmacion_lec`
             instance.confirmacion_lec = request.data.get("confirmacion_lec")
+            instance.save()
+            return Response(self.get_serializer(instance).data)
+        
+        # Validar permisos para `dep_finanzas@example.com`
+        if user.email == "dep_finanzas@example.com":
+            # Solo puede modificar `estatus`
+            if set(request.data.keys()) != {"estatus"}:
+                return Response(
+                    {"error": "Solo puedes modificar el campo 'estatus'."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            # Permitir la actualización de `estatus`
+            instance.estatus = request.data.get("estatus")
             instance.save()
             return Response(self.get_serializer(instance).data)
 
@@ -172,17 +190,17 @@ class PagosPendientesAPIView(APIView):
 
     def get(self, request):
         # Filtrar los pagos pendientes según el usuario
-        if request.user.email == "coord_nac_rrhh@example.com":
-            # `coord_nac_rrhh` puede ver todos los pagos pendientes
-            pagos_pendientes = PagoApoyo.objects.filter(estatus="pendiente")
+        if request.user.email == "coord_nac_rrhh@example.com" or request.user.email == "dep_finanzas@example.com" :
+            # `coord_nac_rrhh` y `dep_finanzas` pueden ver todos los pagos
+            pagos = PagoApoyo.objects.all()
         elif request.user.tipo_usuario == TipoUsuario.LIDER_LEC:
-            # Un `LIDER_LEC` solo puede ver sus pagos pendientes
-            pagos_pendientes = PagoApoyo.objects.filter(usuario=request.user, estatus="pendiente")
+            # Un `LIDER_LEC` solo puede ver sus propios pagos
+            pagos = PagoApoyo.objects.filter(usuario=request.user)
         else:
             return Response(
-                {"error": "No tienes permiso para acceder a los pagos pendientes."},
+                {"error": "No tienes permiso para acceder a los pagos "},
                 status=403
             )
 
-        serializer = PagoApoyoSerializer(pagos_pendientes, many=True)
+        serializer = PagoApoyoSerializer(pagos, many=True)
         return Response(serializer.data, status=200)
