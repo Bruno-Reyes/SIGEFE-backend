@@ -1,6 +1,7 @@
 from configs.azure import azure_storage
 import uuid
 
+
 # Funcion para subir archivos a azure
 def subir_archivo_azure(FILE, CONTAINER_NAME:str):
     try:

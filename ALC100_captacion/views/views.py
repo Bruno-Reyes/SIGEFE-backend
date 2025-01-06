@@ -15,12 +15,14 @@ from django.db import models
 import json
 
 
+
 # Provisional
 from ALC000_sistema_base.models.models import Usuario
 from ALC100_captacion.models.models import DetallesUsuario
 from ALC100_captacion.models.models import Inscripciones
 from ALC000_sistema_base.models.models import TipoUsuario
 from services.send_mail import authenticate, send_mail
+from services.generate_azure_sas_url import generate_sas_url
 from utils.mensajes_predefinidos import mensaje_registro_exitoso
 
 
@@ -157,6 +159,17 @@ class DetallesUsuarioListView(APIView):
         detalles_usuarios=DetallesUsuario.objects.filter(estado_aceptacion="Pendiente")
         serializer=DetallesUsuarioSerializer(detalles_usuarios, many=True)
         return Response(serializer.data)
+    
+@permission_classes([IsAuthenticated])    
+class SaS_URL(APIView):
+    def post(self, request):
+        data = json.loads(request.body)
+        url = data.get('url')
+        if url == "/":
+            return Response({"url_sas": url}, status=200)
+        params = url.split('/')
+        url_sas = generate_sas_url(blob_name=params[4], container_name=params[3], blob_url=url) 
+        return Response({"url_sas": url_sas}, status=200) 
 
 @permission_classes([IsAuthenticated])
 class CambiarEstadoAceptacion(APIView):
@@ -173,10 +186,10 @@ class CambiarEstadoAceptacion(APIView):
         elif action == "rechazar":
             detalles_usuario.estado_aceptacion="Rechazado"
         else:
-            return Response({"error": "Acción no válida."})
+            return Response({"error": "Acción no valida."})
 
         # Guardar el cambio
         detalles_usuario.save()
         return Response(
-            {"mensaje": f"Estado cambiado a {detalles_usuario.estado_aceptacion}."},
+            {"mensaje": "OK"}, status=200,
         )

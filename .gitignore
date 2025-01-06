@@ -1,8 +1,5 @@
 **/__pycache__/
 *.pyc
 .env
-<<<<<<< HEAD
 db.sqlite3
-=======
 venv/
->>>>>>> origin/equipo-1
