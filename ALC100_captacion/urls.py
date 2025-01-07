@@ -5,7 +5,7 @@ from ALC100_captacion.views.views import CambiarEstadoAceptacion, ConvocatoriaVi
 from ALC100_captacion.views.views import ConvocatoriasActivas
 from ALC100_captacion.views.views import RegistrarCandidato
 from ALC100_captacion.views.views import ObtenerActivas
-from ALC100_captacion.views.views import DetallesUsuarioListView, SaS_URL
+from ALC100_captacion.views.views import DetallesUsuarioListView, SaS_URL, ConsultarCandidatosInscritos, ConsultarConvocatoriasInscripcion, CambiarAceptacion
 
 router = DefaultRouter()
 router.register(r'convocatorias', ConvocatoriaViewSet)
@@ -17,6 +17,8 @@ urlpatterns = [
     path('registrar-candidato/', RegistrarCandidato.as_view(), name='registrar-candidato'),
     path('candidatos/', DetallesUsuarioListView.as_view(), name='lista_candidatos'),
     path('url-sas/', SaS_URL.as_view(), name='url-sas'),
-    # Ruta para aceptar o rechazar
     path('detalles_usuario/<int:pk>/<str:action>/', CambiarEstadoAceptacion.as_view(), name='cambiar_estado'),
+    path('consultar-convocatorias/', ConsultarConvocatoriasInscripcion.as_view(), name='consultar_convocatorias'),
+    path('consultar-inscritos-validos/', ConsultarCandidatosInscritos.as_view(), name='consultar_validos'),
+    path('cambiar-aceptacion/<int:pk>/<str:action>/', CambiarAceptacion.as_view(), name='cambiar_aceptacion'),
 ]

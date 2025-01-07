@@ -22,3 +22,11 @@ def asignación_centro_exitoso(lec_email: str, lec_name: str, centro: dict, toke
     Equipo de SIGEFE
     """
     return mensaje
+
+def mensaje_aceptacion(nombre: str, lugar_convocatoria:str) -> str:
+    mensaje = f'<div> <p>Hola <b>{nombre}</b></p> <p>¡Felicidades! Has sido aceptado como LEC en la convocatoria de {lugar_convocatoria}. Próximamente se te hará llegar otro correo donde te informaremos en qué centro has sido asignado. </p> <br> <p>Si no solicitaste este registro, por favor ignora este correo.</p> <p>Saludos cordiales,<br>El Equipo de SIGEFE</p></div>'
+    return mensaje
+    
+def mensaje_rechazo(nombre: str, lugar_convocatoria:str) -> str:
+    mensaje = f'<div> <p>Hola <b>{nombre}</b></p> <p>Lamentamos informarte que no has sido aceptado como LEC en la convocatoria de {lugar_convocatoria}. Agradecemos tu interés y te invitamos a participar en nuestras futuras convocatorias. </p> <br> <p>Si no solicitaste este registro, por favor ignora este correo.</p> <p>Saludos cordiales,<br>El Equipo de SIGEFE</p></div>'
+    return mensaje
