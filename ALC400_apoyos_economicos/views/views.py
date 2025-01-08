@@ -1,12 +1,19 @@
 from django.shortcuts import get_object_or_404
+from django.db.models import OuterRef, Subquery
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
+from ALC000_sistema_base.models.models import Usuario
+from ALC000_sistema_base.serializers import UsuarioSerializer
 from ALC400_apoyos_economicos.models.models import PagoApoyo
 from ALC400_apoyos_economicos.serializers import PagoApoyoSerializer
 from ALC000_sistema_base.models.models import Usuario, TipoUsuario
+from ALC400_apoyos_economicos.models.models import ALC004TiposBecas
+from ALC400_apoyos_economicos.serializers import ALC004TiposBecasSerializer
+from ALC400_apoyos_economicos.models.models import ALC401LecBecas
+from ALC400_apoyos_economicos.serializers import ALC401LecBecasSerializer
 
 
 class PagoApoyoViewSet(viewsets.ModelViewSet):
@@ -103,11 +110,12 @@ class RegistrarPagoAPIView(APIView):
 
     def post(self, request):
         user = request.user
+        print(user)
 
-        # Validar que el usuario autenticado sea `coord_nac_rrhh@example.com`
-        if user.email != "coord_nac_rrhh@example.com":
+        # Validar que el usuario autenticado tenga permisos para registrar pagos
+        if user.tipo_usuario != "coord_nac_rrhh":
             return Response(
-                {"error": "No tienes permiso para registrar pagos."},
+                {"error": f"No tienes permiso para registrar pagos. Usuario: {user.tipo_usuario}"},
                 status=status.HTTP_403_FORBIDDEN
             )
 
@@ -120,11 +128,19 @@ class RegistrarPagoAPIView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+        # Validar que el monto sea mayor a 0
+        monto = request.data.get("monto")
+        if monto is None or float(monto) <= 0:
+            return Response(
+                {"error": "El monto debe ser mayor a 0."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         # Crear el registro del pago
         serializer = PagoApoyoSerializer(data={
             "usuario": usuario_receptor.id,
             "concepto": request.data.get("concepto"),
-            "monto": request.data.get("monto"),
+            "monto": monto,
             "estatus": request.data.get("estatus", "pendiente"),
             "registrado_por": user.email,
         }, context={"request": request})
@@ -162,6 +178,45 @@ class ListarPagosPorUsuario(APIView):
         serializer = PagoApoyoSerializer(pagos, many=True)
         return Response(serializer.data, status=200)
 
+class RechazarPagoAPIView(APIView):
+    """
+    Endpoint para modificar el campo confirmacion_lec de un registro de PagoApoyo a 'no_recibido'.
+    PATCH: /api/pagos/rechazar/<int:id>/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, id):
+        try:
+            # Obtener el registro de PagoApoyo por ID
+            pago = PagoApoyo.objects.get(id=id)
+        except PagoApoyo.DoesNotExist:
+            return Response({"error": "El registro de pago no existe."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Actualizar el campo confirmacion_lec a 'no_recibido'
+        pago.confirmacion_lec = 'no_recibido'
+        pago.save()
+
+        return Response({"message": f"El pago con ID {id} ha sido rechazado."}, status=status.HTTP_200_OK)
+    
+class ConfirmarPagoAPIView(APIView):
+    """
+    Endpoint para modificar el campo confirmacion_lec de un registro de PagoApoyo a 'recibido'.
+    PATCH: /api/pagos/confirmar/<int:id>/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, id):
+        try:
+            # Obtener el registro de PagoApoyo por ID
+            pago = PagoApoyo.objects.get(id=id)
+        except PagoApoyo.DoesNotExist:
+            return Response({"error": "El registro de pago no existe."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Actualizar el campo confirmacion_lec a 'recibido'
+        pago.confirmacion_lec = 'recibido'
+        pago.save()
+
+        return Response({"message": f"El pago con ID {id} ha sido confirmado."}, status=status.HTTP_200_OK)
 
 class PagosPendientesAPIView(APIView):
     """
@@ -186,3 +241,33 @@ class PagosPendientesAPIView(APIView):
 
         serializer = PagoApoyoSerializer(pagos_pendientes, many=True)
         return Response(serializer.data, status=200)
+
+
+class ALC004TiposBecasListView(APIView):
+    def get(self, request):
+        tipos_becas = ALC004TiposBecas.objects.all()
+        serializer = ALC004TiposBecasSerializer(tipos_becas, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
+class LiderLecConBecasView(APIView):
+    def get(self, request):
+        # Subquery para obtener el tipo de beca asignada
+        subquery = ALC004TiposBecas.objects.filter(
+            id=ALC401LecBecas.objects.filter(usuario=OuterRef('pk')).values('tipo_beca_id')[:1]
+        ).values('tipo')[:1]
+
+        # Consulta principal, filtrando por tipo_usuario = 'lider_lec'
+        usuarios = Usuario.objects.filter(tipo_usuario='lider_lec').annotate(tipo_beca_asignada=Subquery(subquery))
+
+        # Serializar los usuarios con el tipo de beca asignada
+        serializer = UsuarioSerializer(usuarios, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class AsignarBecaView(APIView):
+    def post(self, request):
+        serializer = ALC401LecBecasSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

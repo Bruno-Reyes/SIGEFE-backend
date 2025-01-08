@@ -5,6 +5,9 @@ from rest_framework import status
 from ALC000_sistema_base.serializers import CustomAuthTokenSerializer
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from ALC000_sistema_base.models.models import Usuario
+from ALC000_sistema_base.serializers import UsuarioSerializer
+
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     permission_classes = [AllowAny]
@@ -35,3 +38,10 @@ class ObtainCustomTokenView(APIView):
             }, status=status.HTTP_200_OK)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class LiderLecListView(APIView):
+    def get(self, request):
+        # Filtrar los usuarios cuyo tipo_usuario sea 'lider_lec'
+        lideres = Usuario.objects.filter(tipo_usuario='lider_lec')
+        serializer = UsuarioSerializer(lideres, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

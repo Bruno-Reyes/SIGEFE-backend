@@ -1,5 +1,7 @@
 from django.contrib.auth import authenticate
 from rest_framework import serializers
+from ALC000_sistema_base.models.models import Usuario
+from ALC400_apoyos_economicos.models.models import ALC004TiposBecas
 
 class CustomAuthTokenSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -20,3 +22,10 @@ class CustomAuthTokenSerializer(serializers.Serializer):
 
         data['user'] = user
         return data
+
+class UsuarioSerializer(serializers.ModelSerializer):
+    tipo_beca_asignada = serializers.CharField(default=None)
+
+    class Meta:
+        model = Usuario
+        fields = ['id', 'email', 'tipo_usuario', 'is_active', 'date_joined', 'tipo_beca_asignada']
