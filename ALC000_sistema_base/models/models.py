@@ -42,6 +42,7 @@ class Usuario(AbstractUser):
         choices=TipoUsuario.choices,
         default=TipoUsuario.ASPIRANTE_LEC,
     )
+    esta_asignado = models.BooleanField(default=False)  # Agregar valor predeterminado
 
     # Usar el UserManager personalizado
     objects = UsuarioManager()

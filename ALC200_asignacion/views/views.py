@@ -17,6 +17,7 @@ class LECListView(APIView):
         nombre = request.query_params.get('nombre', None)
         apellido_paterno = request.query_params.get('apellido_paterno', None)
         apellido_materno = request.query_params.get('apellido_materno', None)
+        estado_aceptacion = request.query_params.get('estado_aceptacion', '')  # Asegúrate de que el valor predeterminado sea una cadena vacía
 
         lecs = LEC.objects.all()
 
@@ -35,6 +36,8 @@ class LECListView(APIView):
             lecs = lecs.filter(apellido_paterno__icontains=apellido_paterno)
         if apellido_materno:
             lecs = lecs.filter(apellido_materno__icontains=apellido_materno)
+        if estado_aceptacion:
+            lecs = lecs.filter(estado_aceptacion=estado_aceptacion)  # Filtrar por estado_aceptacion
 
         # Serializa los datos en formato JSON
         data = [
@@ -119,9 +122,13 @@ class AsignarCentroLEC(APIView):
             lec.cct_centro_asignado = centro.clave_centro_trabajo
             lec.estado_centro_asignado = centro.estado
             lec.municipio_centro_asignado = centro.municipio
-            lec.fecha_asignacion = timezone.now()  # Guardar la fecha y hora actual
+            lec.fecha_asignacion = timezone.now()
             lec.save()
 
+            # # Cambiar el tipo_usuario de la tabla de Usuario a LIDER_LEC
+            # usuario = lec.usuario
+            # usuario.tipo_usuario = TipoUsuario.LIDER_LEC
+            # usuario.save()
             # Guardar en el historial de asignaciones
             HistorialAsignacion.objects.create(
                 lec=lec,
@@ -144,7 +151,7 @@ class AsignarCentroLEC(APIView):
                 "codigo_postal": centro.codigo_postal,
                 "domicilio": centro.domicilio
             }, token)
-            send_mail(destination=lec.email, subject='¡Asignación de centro exitosa!', body=contenido, token=token) 
+            send_mail(destination=lec.email, subject='¡Asignación de centro exitosa!', body=contenido, token=token)
 
             return Response(
                 {"message": f"LEC {lec.nombre} asignado al centro {centro.clave_centro_trabajo} exitosamente."},

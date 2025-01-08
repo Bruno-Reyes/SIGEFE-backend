@@ -138,6 +138,7 @@ class RegistrarCandidato(APIView):
                 # Inscribir candidato a convocatoria
                 convocatoria=Convocatoria.objects.get(
                     id=values["convocatoria"])
+                    
                 fecha_inscripcion=timezone.now().date()
                 inscripcion=Inscripciones.objects.create(
                     usuario=detallesUsuario,
@@ -238,13 +239,27 @@ class CambiarAceptacion(APIView):
         }
         # Determinar el estado basado en la acción
         if action == "aceptar":
-            # Cambiar el estado de la inscripcion a "Aceptado"
-            inscripcion.estado_aprobacion="Aceptado"
-            
-            # Cambiar el tipo_usuario de la tabla de Usuario a LIDER_LEC
-            usuario = inscripcion.usuario.usuario
-            usuario.tipo_usuario = TipoUsuario.LIDER_LEC
-            usuario.save()
+            # Crear o actualizar el objeto LEC
+            lec, created = LEC.objects.get_or_create(
+                email=detalles_usuario.usuario.email,
+                defaults={
+                    "nombre": detalles_usuario.nombres,
+                    "apellido_paterno": detalles_usuario.apellido_paterno,
+                    "apellido_materno": detalles_usuario.apellido_materno,
+                    "estado": detalles_usuario.estado,
+                    "municipio": detalles_usuario.municipio,
+                    "localidad": detalles_usuario.localidad
+                }
+            )
+            # Actualizar datos en caso de que ya exista
+            lec.nombre = detalles_usuario.nombres
+            lec.apellido_paterno = detalles_usuario.apellido_paterno
+            lec.apellido_materno = detalles_usuario.apellido_materno
+            lec.estado = detalles_usuario.estado
+            lec.municipio = detalles_usuario.municipio
+            lec.localidad = detalles_usuario.localidad
+            lec.estado_aceptacion = "Aceptado"
+            lec.save()
             
             # Enviar correo de aceptación
                         
@@ -262,4 +277,4 @@ class CambiarAceptacion(APIView):
 
         # Guardar el cambio
         inscripcion.save()
-        return Response({"mensaje": "OK"}, status=200)    
+        return Response({"mensaje": "OK"}, status=200)
