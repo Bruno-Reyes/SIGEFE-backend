@@ -23,7 +23,7 @@ from ALC100_captacion.models.models import Inscripciones
 from ALC000_sistema_base.models.models import TipoUsuario
 from services.send_mail import authenticate, send_mail
 from services.generate_azure_sas_url import generate_sas_url
-from utils.mensajes_predefinidos import mensaje_registro_exitoso
+from utils.mensajes_predefinidos import mensaje_registro_exitoso, mensaje_aceptacion, mensaje_rechazo
 
 
 class ConvocatoriaViewSet(viewsets.ModelViewSet):
@@ -193,3 +193,73 @@ class CambiarEstadoAceptacion(APIView):
         return Response(
             {"mensaje": "OK"}, status=200,
         )
+        
+@permission_classes([IsAuthenticated])
+class ConsultarConvocatoriasInscripcion(APIView):
+    def get(self, request):
+        convocatorias = Convocatoria.objects.filter(fecha_entrega_resultados__gte=timezone.now().date())
+        convocatorias_incompletas = []
+        for convocatoria in convocatorias:
+            inscripciones = Inscripciones.objects.filter(convocatoria=convocatoria)
+            if len(inscripciones) < convocatoria.max_participantes:
+                convocatorias_incompletas.append(convocatoria)        
+        serializer = ConvocatoriaSerializer(convocatorias_incompletas, many=True)
+        return Response(serializer.data)            
+        
+@permission_classes([IsAuthenticated])
+class ConsultarCandidatosInscritos(APIView):
+    def post(self, request):
+        # Obtener el id de la convocatoria
+        data = json.loads(request.body)
+        id_convocatoria = data.get('id_convocatoria')
+        # Obtener los candidatos inscritos en la convocatoria que el estado_aceptacion sea "Aceptado" y estado_aprobacion sea "Pendiente"
+        inscripciones = Inscripciones.objects.filter(convocatoria=id_convocatoria, usuario__estado_aceptacion="Aceptado", estado_aprobacion="Pendiente")
+        
+        candidatos = [{"usuario": inscripcion.usuario, "inscripcion_id": inscripcion.id} for inscripcion in inscripciones]
+        serializer = DetallesUsuarioSerializer([candidato["usuario"] for candidato in candidatos], many=True)
+        for i, candidato in enumerate(candidatos):
+            candidato["usuario"] = serializer.data[i]
+        return Response({"candidatos": candidatos}, status=200)
+    
+@permission_classes([IsAuthenticated])
+class CambiarAceptacion(APIView):
+    def patch(self, request, pk, action=None):
+        try:
+            # Obtener el objeto de Inscripciones con el usuario_id que viene como pk 
+            inscripcion =Inscripciones.objects.get(pk=pk)
+        except DetallesUsuario.DoesNotExist:
+            return Response({"error": "Inscripcion no encontrado."})
+
+        detalles_usuario = inscripcion.usuario
+        values = {
+            "nombres": detalles_usuario.nombres,
+            "correo": detalles_usuario.usuario.email,
+            "lugar_convocatoria": inscripcion.convocatoria.lugar_convocatoria
+        }
+        # Determinar el estado basado en la acción
+        if action == "aceptar":
+            # Cambiar el estado de la inscripcion a "Aceptado"
+            inscripcion.estado_aprobacion="Aceptado"
+            
+            # Cambiar el tipo_usuario de la tabla de Usuario a LIDER_LEC
+            usuario = inscripcion.usuario.usuario
+            usuario.tipo_usuario = TipoUsuario.LIDER_LEC
+            usuario.save()
+            
+            # Enviar correo de aceptación
+                        
+            token = authenticate()
+            contenido = mensaje_aceptacion(values["nombres"], values["lugar_convocatoria"])
+            send_mail(destination=values["correo"],subject='Aceptacion a la CONAFE como LEC',body=contenido, token=token)
+            
+        elif action == "rechazar":
+            inscripcion.estado_aprobacion="Rechazado"
+            token = authenticate()
+            contenido = mensaje_rechazo(values["nombres"], values["lugar_convocatoria"])
+            send_mail(destination=values["correo"],subject='Rechazo a la CONAFE como LEC',body=contenido, token=token)
+        else:
+            return Response({"error": "Acción no valida."})
+
+        # Guardar el cambio
+        inscripcion.save()
+        return Response({"mensaje": "OK"}, status=200)    

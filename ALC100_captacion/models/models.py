@@ -166,7 +166,6 @@ class DetallesUsuario(models.Model):
     certificado = models.CharField(max_length=500, blank=True)
     identificacion = models.CharField(max_length=500, blank=True)
     estado_cuenta = models.CharField(max_length=500, blank=True)
-    aprobacion = models.BooleanField(default=False)
 
     ESTADO_ACEPTACION_OPCIONES = [
         ('Aceptado', 'Aceptado'),
@@ -204,6 +203,18 @@ class Inscripciones(models.Model):
         related_name="inscripciones"
     )
     fecha_inscripcion = models.DateField(auto_now_add=True)
+    
+    ESTADO_ACEPTACION_OPCIONES = [
+        ('Aceptado', 'Aceptado'),
+        ('Rechazado', 'Rechazado'),
+        ('Pendiente', 'Pendiente'),
+    ]
+    
+    estado_aprobacion = models.CharField(
+        max_length=10,
+        choices=ESTADO_ACEPTACION_OPCIONES,
+        default='Pendiente'
+    )
 
     def __str__(self):
         return f"\n{self.usuario} inscrito en {self.convocatoria.lugar_convocatoria} el {self.fecha_inscripcion}\n---------------------------------------------------------------"
