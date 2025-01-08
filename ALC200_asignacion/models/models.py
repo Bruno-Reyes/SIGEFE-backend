@@ -15,6 +15,7 @@ class LEC(models.Model):
     municipio_centro_asignado = models.CharField(max_length=100, null=True, blank=True)
     fecha_asignacion = models.DateTimeField(default=timezone.now)  # Registrar automáticamente la fecha de asignación
     email = models.EmailField(max_length=254, unique=True)  # No permitir valores nulos
+    estado_aceptacion = models.CharField(max_length=20,default='Aceptado'    )
 
     def __str__(self):
         return f"{self.nombre} {self.apellido_paterno} {self.apellido_materno}"
