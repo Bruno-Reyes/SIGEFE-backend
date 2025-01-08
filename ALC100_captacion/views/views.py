@@ -227,9 +227,9 @@ class CambiarAceptacion(APIView):
     def patch(self, request, pk, action=None):
         try:
             # Obtener el objeto de Inscripciones con el usuario_id que viene como pk 
-            inscripcion =Inscripciones.objects.get(pk=pk)
-        except DetallesUsuario.DoesNotExist:
-            return Response({"error": "Inscripcion no encontrado."})
+            inscripcion = Inscripciones.objects.get(pk=pk)
+        except Inscripciones.DoesNotExist:
+            return Response({"error": "Inscripcion no encontrado."}, status=status.HTTP_404_NOT_FOUND)
 
         detalles_usuario = inscripcion.usuario
         values = {
@@ -239,6 +239,7 @@ class CambiarAceptacion(APIView):
         }
         # Determinar el estado basado en la acción
         if action == "aceptar":
+            inscripcion.estado_aprobacion = "Aceptado"  # Asegúrate de actualizar el estado de aprobación
             # Crear o actualizar el objeto LEC
             lec, created = LEC.objects.get_or_create(
                 email=detalles_usuario.usuario.email,
@@ -248,7 +249,7 @@ class CambiarAceptacion(APIView):
                     "apellido_materno": detalles_usuario.apellido_materno,
                     "estado": detalles_usuario.estado,
                     "municipio": detalles_usuario.municipio,
-                    "localidad": detalles_usuario.localidad
+                    "localidad": detalles_usuario.localidad,
                 }
             )
             # Actualizar datos en caso de que ya exista
@@ -259,19 +260,19 @@ class CambiarAceptacion(APIView):
             lec.municipio = detalles_usuario.municipio
             lec.localidad = detalles_usuario.localidad
             lec.estado_aceptacion = "Aceptado"
+            lec.detalles_usuario = detalles_usuario  # Asegurarse de asignar detalles_usuario
             lec.save()
             
             # Enviar correo de aceptación
-                        
             token = authenticate()
             contenido = mensaje_aceptacion(values["nombres"], values["lugar_convocatoria"])
-            send_mail(destination=values["correo"],subject='Aceptacion a la CONAFE como LEC',body=contenido, token=token)
+            send_mail(destination=values["correo"], subject='Aceptacion a la CONAFE como LEC', body=contenido, token=token)
             
         elif action == "rechazar":
-            inscripcion.estado_aprobacion="Rechazado"
+            inscripcion.estado_aprobacion = "Rechazado"
             token = authenticate()
             contenido = mensaje_rechazo(values["nombres"], values["lugar_convocatoria"])
-            send_mail(destination=values["correo"],subject='Rechazo a la CONAFE como LEC',body=contenido, token=token)
+            send_mail(destination=values["correo"], subject='Rechazo a la CONAFE como LEC', body=contenido, token=token)
         else:
             return Response({"error": "Acción no valida."})
 
