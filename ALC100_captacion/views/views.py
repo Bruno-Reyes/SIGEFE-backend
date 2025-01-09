@@ -1,5 +1,5 @@
 # views.py
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from ALC100_captacion.models.models import Convocatoria
@@ -250,6 +250,7 @@ class CambiarAceptacion(APIView):
                     "estado": detalles_usuario.estado,
                     "municipio": detalles_usuario.municipio,
                     "localidad": detalles_usuario.localidad,
+                    "id_usuario": detalles_usuario.id
                 }
             )
             # Actualizar datos en caso de que ya exista
