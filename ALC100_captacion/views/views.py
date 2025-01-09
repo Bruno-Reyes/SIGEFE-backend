@@ -1,5 +1,5 @@
 # views.py
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from ALC100_captacion.models.models import Convocatoria
@@ -138,6 +138,7 @@ class RegistrarCandidato(APIView):
                 # Inscribir candidato a convocatoria
                 convocatoria=Convocatoria.objects.get(
                     id=values["convocatoria"])
+                    
                 fecha_inscripcion=timezone.now().date()
                 inscripcion=Inscripciones.objects.create(
                     usuario=detallesUsuario,
@@ -226,9 +227,9 @@ class CambiarAceptacion(APIView):
     def patch(self, request, pk, action=None):
         try:
             # Obtener el objeto de Inscripciones con el usuario_id que viene como pk 
-            inscripcion =Inscripciones.objects.get(pk=pk)
-        except DetallesUsuario.DoesNotExist:
-            return Response({"error": "Inscripcion no encontrado."})
+            inscripcion = Inscripciones.objects.get(pk=pk)
+        except Inscripciones.DoesNotExist:
+            return Response({"error": "Inscripcion no encontrado."}, status=status.HTTP_404_NOT_FOUND)
 
         detalles_usuario = inscripcion.usuario
         values = {
@@ -238,28 +239,44 @@ class CambiarAceptacion(APIView):
         }
         # Determinar el estado basado en la acción
         if action == "aceptar":
-            # Cambiar el estado de la inscripcion a "Aceptado"
-            inscripcion.estado_aprobacion="Aceptado"
-            
-            # Cambiar el tipo_usuario de la tabla de Usuario a LIDER_LEC
-            usuario = inscripcion.usuario.usuario
-            usuario.tipo_usuario = TipoUsuario.LIDER_LEC
-            usuario.save()
+            inscripcion.estado_aprobacion = "Aceptado"  # Asegúrate de actualizar el estado de aprobación
+            # Crear o actualizar el objeto LEC
+            lec, created = LEC.objects.get_or_create(
+                email=detalles_usuario.usuario.email,
+                defaults={
+                    "nombre": detalles_usuario.nombres,
+                    "apellido_paterno": detalles_usuario.apellido_paterno,
+                    "apellido_materno": detalles_usuario.apellido_materno,
+                    "estado": detalles_usuario.estado,
+                    "municipio": detalles_usuario.municipio,
+                    "localidad": detalles_usuario.localidad,
+                    "id_usuario": detalles_usuario.id
+                }
+            )
+            # Actualizar datos en caso de que ya exista
+            lec.nombre = detalles_usuario.nombres
+            lec.apellido_paterno = detalles_usuario.apellido_paterno
+            lec.apellido_materno = detalles_usuario.apellido_materno
+            lec.estado = detalles_usuario.estado
+            lec.municipio = detalles_usuario.municipio
+            lec.localidad = detalles_usuario.localidad
+            lec.estado_aceptacion = "Aceptado"
+            lec.detalles_usuario = detalles_usuario  # Asegurarse de asignar detalles_usuario
+            lec.save()
             
             # Enviar correo de aceptación
-                        
             token = authenticate()
             contenido = mensaje_aceptacion(values["nombres"], values["lugar_convocatoria"])
-            send_mail(destination=values["correo"],subject='Aceptacion a la CONAFE como LEC',body=contenido, token=token)
+            send_mail(destination=values["correo"], subject='Aceptacion a la CONAFE como LEC', body=contenido, token=token)
             
         elif action == "rechazar":
-            inscripcion.estado_aprobacion="Rechazado"
+            inscripcion.estado_aprobacion = "Rechazado"
             token = authenticate()
             contenido = mensaje_rechazo(values["nombres"], values["lugar_convocatoria"])
-            send_mail(destination=values["correo"],subject='Rechazo a la CONAFE como LEC',body=contenido, token=token)
+            send_mail(destination=values["correo"], subject='Rechazo a la CONAFE como LEC', body=contenido, token=token)
         else:
             return Response({"error": "Acción no valida."})
 
         # Guardar el cambio
         inscripcion.save()
-        return Response({"mensaje": "OK"}, status=200)    
+        return Response({"mensaje": "OK"}, status=200)

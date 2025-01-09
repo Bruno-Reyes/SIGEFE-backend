@@ -5,6 +5,8 @@ from rest_framework import status
 from ..models.models import LEC, CentroComunitario, HistorialAsignacion
 from django.utils import timezone  # Importar timezone para obtener la fecha y hora actual
 from services.send_mail import authenticate, send_mail
+from ALC000_sistema_base.models.models import TipoUsuario
+from ALC100_captacion.models.models import DetallesUsuario, Inscripciones
 
 from utils.mensajes_predefinidos import asignación_centro_exitoso
 
@@ -17,6 +19,7 @@ class LECListView(APIView):
         nombre = request.query_params.get('nombre', None)
         apellido_paterno = request.query_params.get('apellido_paterno', None)
         apellido_materno = request.query_params.get('apellido_materno', None)
+        estado_aceptacion = request.query_params.get('estado_aceptacion', '')  # Asegúrate de que el valor predeterminado sea una cadena vacía
 
         lecs = LEC.objects.all()
 
@@ -35,6 +38,8 @@ class LECListView(APIView):
             lecs = lecs.filter(apellido_paterno__icontains=apellido_paterno)
         if apellido_materno:
             lecs = lecs.filter(apellido_materno__icontains=apellido_materno)
+        if estado_aceptacion:
+            lecs = lecs.filter(estado_aceptacion=estado_aceptacion)  # Filtrar por estado_aceptacion
 
         # Serializa los datos en formato JSON
         data = [
@@ -48,7 +53,8 @@ class LECListView(APIView):
                 "cct_centro_asignado": lec.cct_centro_asignado if lec.centro_asignado else None,
                 "estado_centro_asignado": lec.estado_centro_asignado if lec.centro_asignado else None,
                 "municipio_centro_asignado": lec.municipio_centro_asignado if lec.centro_asignado else None,
-                "fecha_asignacion": lec.fecha_asignacion.strftime("%Y-%m-%d %H:%M:%S") if lec.fecha_asignacion else None
+                "fecha_asignacion": lec.fecha_asignacion.strftime("%Y-%m-%d %H:%M:%S") if lec.fecha_asignacion else None,
+                "inscripcion_id": lec.id  # Asegúrate de incluir inscripcion_id
             }
             for lec in lecs
         ]
@@ -91,6 +97,8 @@ class AsignarCentroLEC(APIView):
         lec_id = request.data.get("lec_id")
         centro_id = request.data.get("centro_id")
 
+        print(f"AsignarCentroLEC - lec_id: {lec_id}, centro_id: {centro_id}")
+
         if not lec_id:
             return Response(
                 {"error": "Se requieren lec_id."}, 
@@ -119,8 +127,10 @@ class AsignarCentroLEC(APIView):
             lec.cct_centro_asignado = centro.clave_centro_trabajo
             lec.estado_centro_asignado = centro.estado
             lec.municipio_centro_asignado = centro.municipio
-            lec.fecha_asignacion = timezone.now()  # Guardar la fecha y hora actual
+            lec.fecha_asignacion = timezone.now()
             lec.save()
+
+            print(f"LEC {lec.nombre} asignado al centro {centro.clave_centro_trabajo}")
 
             # Guardar en el historial de asignaciones
             HistorialAsignacion.objects.create(
@@ -144,7 +154,7 @@ class AsignarCentroLEC(APIView):
                 "codigo_postal": centro.codigo_postal,
                 "domicilio": centro.domicilio
             }, token)
-            send_mail(destination=lec.email, subject='¡Asignación de centro exitosa!', body=contenido, token=token) 
+            send_mail(destination=lec.email, subject='¡Asignación de centro exitosa!', body=contenido, token=token)
 
             return Response(
                 {"message": f"LEC {lec.nombre} asignado al centro {centro.clave_centro_trabajo} exitosamente."},
@@ -152,10 +162,13 @@ class AsignarCentroLEC(APIView):
             )
 
         except LEC.DoesNotExist:
+            print("LEC no encontrado.")
             return Response({"error": "LEC no encontrado."}, status=status.HTTP_404_NOT_FOUND)
         except CentroComunitario.DoesNotExist:
+            print("Centro comunitario no encontrado.")
             return Response({"error": "Centro comunitario no encontrado."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
+            print(f"Error: {str(e)}")
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class EliminarLECView(APIView):
@@ -208,3 +221,24 @@ class HistorialLECView(APIView):
             return Response({"error": "LEC no encontrado."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class ActualizarTipoUsuario(APIView):
+    def patch(self, request, pk):
+        print("Entrando a ActualizarTipoUsuario")
+        print(f"ActualizarTipoUsuario - pk: {pk}")
+        print(f"Request data: {request.data}")
+        try:
+            # Obtener el objeto DetallesUsuario
+            detalles_usuario = DetallesUsuario.objects.get(pk=pk)
+            print(f"DetallesUsuario encontrado: {detalles_usuario}")
+        except DetallesUsuario.DoesNotExist:
+            print("DetallesUsuario no encontrado.")
+            return Response({"error": "DetallesUsuario no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Cambiar el tipo de usuario a lider_lec
+        detalles_usuario.usuario.tipo_usuario = TipoUsuario.LIDER_LEC
+        detalles_usuario.usuario.save()
+
+        print(f"Tipo de usuario actualizado a líder LEC para usuario: {detalles_usuario.usuario.email}")
+
+        return Response({"mensaje": "Tipo de usuario actualizado a líder LEC."}, status=status.HTTP_200_OK)
