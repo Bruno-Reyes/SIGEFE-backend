@@ -43,3 +43,10 @@ class ALC401LecBecasSerializer(serializers.ModelSerializer):
         if ALC401LecBecas.objects.filter(tipo_beca=data['tipo_beca'], usuario=data['usuario']).exists():
             raise serializers.ValidationError("El usuario ya tiene esta beca asignada.")
         return data
+    
+class UsuarioConBecaSerializer(serializers.ModelSerializer):
+    tipo_beca_asignada = serializers.CharField()
+
+    class Meta:
+        model = Usuario
+        fields = ['id', 'email', 'tipo_usuario', 'tipo_beca_asignada']

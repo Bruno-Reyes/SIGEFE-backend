@@ -1,5 +1,6 @@
 from django.shortcuts import get_object_or_404
-from django.db.models import OuterRef, Subquery
+from django.db.models import OuterRef, Subquery, F, Value
+from django.db.models.functions import Coalesce
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -13,7 +14,7 @@ from ALC000_sistema_base.models.models import Usuario, TipoUsuario
 from ALC400_apoyos_economicos.models.models import ALC004TiposBecas
 from ALC400_apoyos_economicos.serializers import ALC004TiposBecasSerializer
 from ALC400_apoyos_economicos.models.models import ALC401LecBecas
-from ALC400_apoyos_economicos.serializers import ALC401LecBecasSerializer
+from ALC400_apoyos_economicos.serializers import ALC401LecBecasSerializer, UsuarioConBecaSerializer
 
 
 class PagoApoyoViewSet(viewsets.ModelViewSet):
@@ -250,19 +251,27 @@ class ALC004TiposBecasListView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     
-class LiderLecConBecasView(APIView):
+class LideresConBecasAPIView(APIView):
+    """
+    Endpoint para obtener los usuarios tipo 'lider_lec' junto con la beca asignada.
+    GET: /api/pagos/lideres-lec-con-becas/
+    """
     def get(self, request):
-        # Subquery para obtener el tipo de beca asignada
-        subquery = ALC004TiposBecas.objects.filter(
-            id=ALC401LecBecas.objects.filter(usuario=OuterRef('pk')).values('tipo_beca_id')[:1]
-        ).values('tipo')[:1]
+        # Obtener los usuarios tipo 'lider_lec' y prefetch de las becas
+        usuarios = Usuario.objects.filter(tipo_usuario='lider_lec').prefetch_related('becas__tipo_beca')
 
-        # Consulta principal, filtrando por tipo_usuario = 'lider_lec'
-        usuarios = Usuario.objects.filter(tipo_usuario='lider_lec').annotate(tipo_beca_asignada=Subquery(subquery))
+        # Formatear los datos manualmente
+        data = []
+        for usuario in usuarios:
+            beca_asignada = usuario.becas.first().tipo_beca.tipo if usuario.becas.exists() else None
+            data.append({
+                "usuario_id": usuario.id,
+                "email": usuario.email,
+                "tipo_usuario": usuario.tipo_usuario,
+                "tipo_beca_asignada": beca_asignada
+            })
 
-        # Serializar los usuarios con el tipo de beca asignada
-        serializer = UsuarioSerializer(usuarios, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(data, status=200)
     
 class AsignarBecaView(APIView):
     def post(self, request):
