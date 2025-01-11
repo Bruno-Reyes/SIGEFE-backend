@@ -242,3 +242,22 @@ class ActualizarTipoUsuario(APIView):
         print(f"Tipo de usuario actualizado a líder LEC para usuario: {detalles_usuario.usuario.email}")
 
         return Response({"mensaje": "Tipo de usuario actualizado a líder LEC."}, status=status.HTTP_200_OK)
+    
+class LECDetailViewByEmail(APIView):
+    def get(self, request, email, *args, **kwargs):
+        try:
+            lec = LEC.objects.get(email=email)
+            data = {
+                'id': lec.id_usuario,
+                'nombre': lec.nombre,
+                'apellido_paterno': lec.apellido_paterno,
+                'apellido_materno': lec.apellido_materno,
+                'estado': lec.estado,
+                'municipio': lec.municipio,
+                'localidad': lec.localidad,
+                'centro_asignado': lec.centro_asignado.clave_centro_trabajo if lec.centro_asignado else None,
+                'email': lec.email,
+            }
+            return Response(data, status=status.HTTP_200_OK)
+        except LEC.DoesNotExist:
+            return Response({'error': 'LEC no encontrado'}, status=status.HTTP_404_NOT_FOUND)
