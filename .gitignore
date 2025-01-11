@@ -2,6 +2,4 @@
 *.pyc
 .env
 db.sqlite3
-venv/
-git r
-node_modules/
+env/
