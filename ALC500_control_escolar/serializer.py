@@ -7,6 +7,8 @@ class EstudianteSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class CalificacionesSerializer(serializers.ModelSerializer):
+    promedio = serializers.FloatField()
+
     class Meta:
         model = Calificaciones
         fields = '__all__'

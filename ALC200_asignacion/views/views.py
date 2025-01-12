@@ -65,6 +65,8 @@ class CentroComunitarioListView(APIView):
     def get(self, request, *args, **kwargs):
         estado = request.query_params.get('estado', None)
         municipio = request.query_params.get('municipio', None)
+        nombre_localidad = request.query_params.get('nombre_localidad', None)  # Cambiar a nombre_localidad
+        clave_centro_trabajo = request.query_params.get('clave_centro_trabajo', None)  # Nuevo parámetro
 
         centros = CentroComunitario.objects.all()
 
@@ -73,7 +75,11 @@ class CentroComunitarioListView(APIView):
             centros = centros.filter(estado=estado)
         if municipio:
             centros = centros.filter(municipio=municipio)
-
+        if clave_centro_trabajo:
+            centros = centros.filter(clave_centro_trabajo__icontains=clave_centro_trabajo)  
+        if nombre_localidad:
+            centros = centros.filter(nombre_localidad=nombre_localidad)
+            
         # Serializa los datos en formato JSON
         data = [
             {
