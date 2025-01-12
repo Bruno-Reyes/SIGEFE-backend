@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from ALC000_sistema_base.models.models import Usuario
 from ALC000_sistema_base.serializers import UsuarioSerializer
+from ALC000_sistema_base.serializers import UsersSerializer
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -45,3 +46,11 @@ class LiderLecListView(APIView):
         lideres = Usuario.objects.filter(tipo_usuario='lider_lec')
         serializer = UsuarioSerializer(lideres, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class LecListView(APIView):
+    def get(self, request):
+        # Filtrar los usuarios cuyo tipo_usuario sea 'lider_lec'
+        lideres = Usuario.objects.filter(tipo_usuario='lider_lec')
+        serializer = UsersSerializer(lideres, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    

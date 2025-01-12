@@ -50,3 +50,10 @@ class UsuarioConBecaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Usuario
         fields = ['id', 'email', 'tipo_usuario', 'tipo_beca_asignada']
+
+class LecBecasSerializer(serializers.ModelSerializer):
+    tipo_beca = ALC004TiposBecasSerializer()  # Relación con TiposBecas
+
+    class Meta:
+        model = ALC401LecBecas
+        fields = ['id', 'usuario', 'tipo_beca', 'estatus']

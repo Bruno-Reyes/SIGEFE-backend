@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404
 from django.db.models import OuterRef, Subquery, F, Value
 from django.db.models.functions import Coalesce
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
@@ -14,7 +14,7 @@ from ALC000_sistema_base.models.models import Usuario, TipoUsuario
 from ALC400_apoyos_economicos.models.models import ALC004TiposBecas
 from ALC400_apoyos_economicos.serializers import ALC004TiposBecasSerializer
 from ALC400_apoyos_economicos.models.models import ALC401LecBecas
-from ALC400_apoyos_economicos.serializers import ALC401LecBecasSerializer, UsuarioConBecaSerializer
+from ALC400_apoyos_economicos.serializers import ALC401LecBecasSerializer, UsuarioConBecaSerializer, LecBecasSerializer
 
 
 class PagoApoyoViewSet(viewsets.ModelViewSet):
@@ -280,3 +280,18 @@ class AsignarBecaView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class LecBecasListView(generics.ListAPIView):
+    queryset = ALC401LecBecas.objects.select_related('tipo_beca', 'usuario').all()
+    serializer_class = LecBecasSerializer
+    
+class LecBecasPorUsuarioView(generics.ListAPIView):
+    """
+    Endpoint para obtener las becas asignadas a un usuario específico por su `usuario_id`.
+    GET: /api/lec-becas/<int:usuario_id>/
+    """
+    serializer_class = LecBecasSerializer
+
+    def get_queryset(self):
+        usuario_id = self.kwargs['usuario_id']
+        return ALC401LecBecas.objects.filter(usuario_id=usuario_id).select_related('tipo_beca', 'usuario')

@@ -14,8 +14,6 @@ from ALC200_asignacion.models.models import LEC
 from django.db import models
 import json
 
-
-
 # Provisional
 from ALC000_sistema_base.models.models import Usuario
 from ALC100_captacion.models.models import DetallesUsuario
@@ -160,6 +158,31 @@ class DetallesUsuarioListView(APIView):
         detalles_usuarios=DetallesUsuario.objects.filter(estado_aceptacion="Pendiente")
         serializer=DetallesUsuarioSerializer(detalles_usuarios, many=True)
         return Response(serializer.data)
+    
+@permission_classes([IsAuthenticated])
+class DetallesAllUsers(APIView):
+    def get(self, request):
+        detalles_usuarios=DetallesUsuario.objects.filter(estado_aceptacion="Aceptado")
+        serializer=DetallesUsuarioSerializer(detalles_usuarios, many=True)
+        return Response(serializer.data)
+    
+class DetallesUsuarioPorID(APIView):
+    """
+    Endpoint para obtener los detalles de un usuario específico por su `usuario_id`.
+    GET: /api/detalles-usuario/<int:usuario_id>/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, usuario_id):
+        try:
+            # Filtrar por `usuario_id` y estado de aceptación
+            detalle_usuario = DetallesUsuario.objects.get(usuario_id=usuario_id, estado_aceptacion="Aceptado")
+        except DetallesUsuario.DoesNotExist:
+            return Response({"error": "No se encontró ningún usuario con el ID proporcionado."}, status=404)
+
+        # Serializar los datos
+        serializer = DetallesUsuarioSerializer(detalle_usuario)
+        return Response(serializer.data, status=200)
     
 @permission_classes([IsAuthenticated])    
 class SaS_URL(APIView):

@@ -29,3 +29,9 @@ class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Usuario
         fields = ['id', 'email', 'tipo_usuario', 'is_active', 'date_joined', 'tipo_beca_asignada']
+        
+class UsersSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Usuario
+        fields = ['id', 'first_name', 'last_name', 'email', 'tipo_usuario', 'is_active', 'date_joined']
