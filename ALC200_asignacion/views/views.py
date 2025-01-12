@@ -65,6 +65,8 @@ class CentroComunitarioListView(APIView):
     def get(self, request, *args, **kwargs):
         estado = request.query_params.get('estado', None)
         municipio = request.query_params.get('municipio', None)
+        nombre_localidad = request.query_params.get('nombre_localidad', None)  # Cambiar a nombre_localidad
+        clave_centro_trabajo = request.query_params.get('clave_centro_trabajo', None)  # Nuevo parámetro
 
         centros = CentroComunitario.objects.all()
 
@@ -73,7 +75,11 @@ class CentroComunitarioListView(APIView):
             centros = centros.filter(estado=estado)
         if municipio:
             centros = centros.filter(municipio=municipio)
-
+        if clave_centro_trabajo:
+            centros = centros.filter(clave_centro_trabajo__icontains=clave_centro_trabajo)  
+        if nombre_localidad:
+            centros = centros.filter(nombre_localidad=nombre_localidad)
+            
         # Serializa los datos en formato JSON
         data = [
             {
@@ -112,7 +118,7 @@ class AsignarCentroLEC(APIView):
             )
 
         try:
-            lec = LEC.objects.get(id=lec_id)
+            lec = LEC.objects.get(pk=lec_id)
             centro = CentroComunitario.objects.get(id=centro_id)
             
             # Verificar que el centro tiene vacantes disponibles
@@ -242,3 +248,22 @@ class ActualizarTipoUsuario(APIView):
         print(f"Tipo de usuario actualizado a líder LEC para usuario: {detalles_usuario.usuario.email}")
 
         return Response({"mensaje": "Tipo de usuario actualizado a líder LEC."}, status=status.HTTP_200_OK)
+    
+class LECDetailViewByEmail(APIView):
+    def get(self, request, email, *args, **kwargs):
+        try:
+            lec = LEC.objects.get(email=email)
+            data = {
+                'id': lec.id_usuario,
+                'nombre': lec.nombre,
+                'apellido_paterno': lec.apellido_paterno,
+                'apellido_materno': lec.apellido_materno,
+                'estado': lec.estado,
+                'municipio': lec.municipio,
+                'localidad': lec.localidad,
+                'centro_asignado': lec.centro_asignado.clave_centro_trabajo if lec.centro_asignado else None,
+                'email': lec.email,
+            }
+            return Response(data, status=status.HTTP_200_OK)
+        except LEC.DoesNotExist:
+            return Response({'error': 'LEC no encontrado'}, status=status.HTTP_404_NOT_FOUND)

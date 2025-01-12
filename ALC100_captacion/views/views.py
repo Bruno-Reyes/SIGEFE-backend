@@ -248,11 +248,15 @@ class ConsultarCandidatosInscritos(APIView):
 @permission_classes([IsAuthenticated])
 class CambiarAceptacion(APIView):
     def patch(self, request, pk, action=None):
-        try:
+        inscripcion = Inscripciones.objects.get(pk=pk)
+        """ try:
             # Obtener el objeto de Inscripciones con el usuario_id que viene como pk 
             inscripcion = Inscripciones.objects.get(pk=pk)
         except Inscripciones.DoesNotExist:
             return Response({"error": "Inscripcion no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+ """
+        print(pk)
+        #print(inscripcion)
 
         detalles_usuario = inscripcion.usuario
         values = {

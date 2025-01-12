@@ -1,6 +1,7 @@
 # ALC200_asignacion/urls.py
 from django.urls import path
 from ALC200_asignacion.views.views import (
+    LECDetailViewByEmail,
     LECListView, 
     CentroComunitarioListView, 
     AsignarCentroLEC, 
@@ -15,5 +16,6 @@ urlpatterns = [
     path('asignar-lec/', AsignarCentroLEC.as_view(), name='asignar_lec'), # Ruta para asignar un centro a un LEC
     path('eliminar-lec/<int:lec_id>/', EliminarLECView.as_view(), name='eliminar-lec'),
     path('historial-lec/', HistorialLECView.as_view(), name='historial-lec'),  # Ruta para obtener el historial de asignaciones de un LEC por nombre y apellidos
-    path('actualizar-tipo-usuario/<int:pk>/', ActualizarTipoUsuario.as_view(), name='actualizar-tipo-usuario')
+    path('actualizar-tipo-usuario/<int:pk>/', ActualizarTipoUsuario.as_view(), name='actualizar-tipo-usuario'),
+    path('lec/email/<str:email>/', LECDetailViewByEmail.as_view(), name='lec-detail-by-email'),
 ]
