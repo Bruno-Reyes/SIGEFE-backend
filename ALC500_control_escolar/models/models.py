@@ -4,6 +4,8 @@ class Estudiante(models.Model):
 
     id_lec = models.IntegerField()
     nombre = models.CharField(max_length=100)
+    apellido_paterno = models.CharField(max_length=100)
+    apellido_materno = models.CharField(max_length=100)
     edad = models.IntegerField()
     grado = models.CharField(max_length=50)
     grupo = models.CharField(max_length=50)
@@ -14,7 +16,7 @@ class Estudiante(models.Model):
     nivel_educativo = models.CharField(max_length=100)
 
     def __str__(self):
-        return f"{self.nombre} - {self.centro_educativo}"
+        return f"{self.nombre} {self.apellido_paterno} {self.apellido_materno} - {self.centro_educativo}"
     
 
 class Calificaciones(models.Model):

@@ -112,7 +112,7 @@ class AsignarCentroLEC(APIView):
             )
 
         try:
-            lec = LEC.objects.get(id=lec_id)
+            lec = LEC.objects.get(pk=lec_id)
             centro = CentroComunitario.objects.get(id=centro_id)
             
             # Verificar que el centro tiene vacantes disponibles

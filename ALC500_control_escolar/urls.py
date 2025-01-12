@@ -8,4 +8,5 @@ router.register(r'calificaciones', CalificacionesViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('calificaciones/bulk_create/', CalificacionesViewSet.as_view({'post': 'bulk_create'})),
 ]
