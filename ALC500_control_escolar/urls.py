@@ -9,5 +9,5 @@ router.register(r'calificaciones', CalificacionesViewSet)
 urlpatterns = [
     path('', include(router.urls)),
     path('calificaciones/bulk_create/', CalificacionesViewSet.as_view({'post': 'bulk_create'})),
-    path('historial_migratorio/', HistorialMigratorioView.as_view(), name='historial-migratorio'),
+    path('historial_migratorio/', HistorialMigratorioView.as_view(), name='historial_migratorio'),
 ]

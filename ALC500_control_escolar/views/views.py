@@ -10,6 +10,8 @@ from ALC200_asignacion.models.models import HistorialAsignacion, CentroComunitar
 from django.db import models
 from rest_framework.views import APIView
 from ALC500_control_escolar.models.models import HistorialMigratorio
+import requests
+from django.conf import settings
 
 @permission_classes([AllowAny])
 class EstudianteViewSet(viewsets.ModelViewSet):
@@ -47,6 +49,38 @@ class CalificacionesViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def bulk_create(self, request):
+        email = request.data[0].get('email')  # Obtener el email del primer elemento de la lista
+        print(email)
+        if not email:
+            return Response({"error": "Se requiere email."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Obtener el token de acceso del encabezado de la solicitud
+        token = request.headers.get('Authorization').split(' ')[1]
+
+        # Obtener el CCT del LEC
+        lec_response = requests.get(f"http://localhost:8000/api/asignacion/lecs?email={email}", headers={"Authorization": f"Bearer {token}"})
+        if lec_response.status_code != 200:
+            return Response({"error": "No se pudo obtener el CCT del LEC."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        lec_data = lec_response.json()[0]  # Acceder al primer elemento del array
+        cct_centro_asignado = lec_data.get('cct_centro_asignado')
+        print(f"CCT del LEC: {cct_centro_asignado}")
+
+        # Verificar si el LEC tiene control sobre los estudiantes
+        estudiantes_ids = [calificacion['id_estudiante'] for calificacion in request.data]
+        estudiantes = Estudiante.objects.filter(id__in=estudiantes_ids)
+
+        # Filtrar estudiantes por grado, grupo y nivel educativo
+        grado = request.data[0].get('grado')
+        grupo = request.data[0].get('grupo')
+        nivel_educativo = request.data[0].get('nivel_educativo')
+        estudiantes = estudiantes.filter(grado=grado, grupo=grupo, nivel_educativo=nivel_educativo)
+
+        for estudiante in estudiantes:
+            print(f"Estudiante ID: {estudiante.id}, Centro Educativo: {estudiante.centro_educativo}")
+            if estudiante.centro_educativo != cct_centro_asignado:
+                return Response({"error": f"El LEC no tiene control sobre el estudiante {estudiante.id}."}, status=status.HTTP_403_FORBIDDEN)
+
         serializer = CalificacionesSerializer(data=request.data, many=True)
         if serializer.is_valid():
             serializer.save()
@@ -60,8 +94,36 @@ class HistorialMigratorioView(APIView):
         id_estudiante = request.data.get('id_estudiante')
         fecha_inscripcion = request.data.get('fecha_inscripcion')
         clave_centro_trabajo = request.data.get('clave_centro_trabajo')
+        email = request.data.get('email')
+        
+        # Imprimir los parámetros recibidos
+        print(f"Parametros recibidos - id_estudiante: {id_estudiante}, fecha_inscripcion: {fecha_inscripcion}, clave_centro_trabajo: {clave_centro_trabajo}, email: {email}")
+
+        if not email:
+            return Response({"error": "Se requiere email."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
+            # Obtener el token de acceso del encabezado de la solicitud
+            token = request.headers.get('Authorization').split(' ')[1]
+
+            # Obtener el CCT del LEC
+            lec_response = requests.get(f"http://localhost:8000/api/asignacion/lecs?email={email}", headers={"Authorization": f"Bearer {token}"})
+            if lec_response.status_code != 200:
+                return Response({"error": "No se pudo obtener el CCT del LEC."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            lec_data = lec_response.json()
+            if not lec_data:
+                return Response({"error": "No se encontró el email en la base de datos."}, status=status.HTTP_404_NOT_FOUND)
+            
+            lec_data = lec_data[0]  # Acceder al primer elemento del array
+            cct_centro_asignado = lec_data.get('cct_centro_asignado')
+            print(f"CCT del LEC: {cct_centro_asignado}")
+            # Verificar si el LEC tiene control sobre el estudiante
+            estudiante = Estudiante.objects.get(id=id_estudiante)
+            print(f"Estudiante ID: {estudiante.id}, Centro Educativo: {estudiante.centro_educativo}")
+            if estudiante.centro_educativo != cct_centro_asignado:
+                return Response({"error": "El LEC no tiene control sobre este estudiante."}, status=status.HTTP_403_FORBIDDEN)
+
             # Convertir la fecha de inscripción al formato correcto
             fecha_inscripcion = fecha_inscripcion.split('T')[0]
             print(f"Registrando historial migratorio - id_estudiante: {id_estudiante}, fecha_inscripcion: {fecha_inscripcion}, clave_centro_trabajo: {clave_centro_trabajo}")
@@ -71,8 +133,13 @@ class HistorialMigratorioView(APIView):
                 clave_centro_trabajo=clave_centro_trabajo
             )
             historial.save()
-            print("Historial migratorio registrado correctamente")
-            return Response({"message": "Historial migratorio registrado correctamente."}, status=status.HTTP_201_CREATED)
+
+            # Actualizar el campo centro_educativo del estudiante
+            estudiante.centro_educativo = clave_centro_trabajo
+            estudiante.save()
+
+            print("Historial migratorio registrado y centro educativo actualizado correctamente")
+            return Response({"message": "Historial migratorio registrado y centro educativo actualizado correctamente."}, status=status.HTTP_201_CREATED)
         except Exception as e:
             print(f"Error al registrar el historial migratorio: {str(e)}")
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

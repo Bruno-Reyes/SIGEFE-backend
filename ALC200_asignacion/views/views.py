@@ -20,6 +20,8 @@ class LECListView(APIView):
         apellido_paterno = request.query_params.get('apellido_paterno', None)
         apellido_materno = request.query_params.get('apellido_materno', None)
         estado_aceptacion = request.query_params.get('estado_aceptacion', '')  # Asegúrate de que el valor predeterminado sea una cadena vacía
+        lec_id = request.query_params.get('lec_id', None)  # Nuevo parámetro para buscar por ID
+        email = request.query_params.get('email', None)  # Nuevo parámetro para buscar por email
 
         lecs = LEC.objects.all()
 
@@ -40,6 +42,10 @@ class LECListView(APIView):
             lecs = lecs.filter(apellido_materno__icontains=apellido_materno)
         if estado_aceptacion:
             lecs = lecs.filter(estado_aceptacion=estado_aceptacion)  # Filtrar por estado_aceptacion
+        if lec_id:
+            lecs = lecs.filter(id=lec_id)
+        if email:
+            lecs = lecs.filter(email=email)
 
         # Serializa los datos en formato JSON
         data = [
