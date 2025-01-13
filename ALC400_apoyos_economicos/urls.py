@@ -12,7 +12,8 @@ from ALC400_apoyos_economicos.views.views import (
     RechazarPagoAPIView,
     ConfirmarPagoAPIView,
     LecBecasListView,
-    LecBecasPorUsuarioView
+    LecBecasPorUsuarioView,
+    ActualizarMontoPagoAPIView
 )
 
 router = DefaultRouter()
@@ -29,5 +30,5 @@ urlpatterns = [
     path('asignar-beca/', AsignarBecaView.as_view(), name='asignar_beca'),
     path('rechazar/<int:id>/', RechazarPagoAPIView.as_view(), name='rechazar_pago'),
     path('confirmar/<int:id>/', ConfirmarPagoAPIView.as_view(), name='confirmar_pago'),
+    path('actualizar-monto/<int:id>/', ActualizarMontoPagoAPIView.as_view(), name='actualizar_monto_pago'),
 ]
-

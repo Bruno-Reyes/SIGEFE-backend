@@ -7,6 +7,9 @@ class PagoApoyo(models.Model):
         ('Beca', 'Beca'),
         ('Seguimiento', 'Seguimiento'),
         ('Continuacion', 'Continuacion'),
+        ('Apoyo Mensual de Servicio', 'Apoyo Mensual de Servicio'),
+        ('Beca de Continuidad 30 Meses', 'Beca de Continuidad 30 Meses'),
+        ('Beca de Continuidad 60 Meses', 'Beca de Continuidad 60 Meses'),
     ]
 
     ESTADOS = [
