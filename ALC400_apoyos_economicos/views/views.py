@@ -154,6 +154,43 @@ class RegistrarPagoAPIView(APIView):
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class ActualizarMontoPagoAPIView(APIView):
+    """
+    Endpoint para actualizar el monto de un pago.
+    PATCH: /api/pagos/actualizar-monto/<int:id>/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, id):
+        try:
+            # Obtener el registro de PagoApoyo por ID
+            pago = PagoApoyo.objects.get(id=id)
+        except PagoApoyo.DoesNotExist:
+            return Response({"error": "El registro de pago no existe."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Validar que solo el usuario `coord_nac_rrhh@example.com` pueda modificar el monto
+        if request.user.email != "coord_nac_rrhh@example.com":
+            return Response(
+                {"error": "No tienes permiso para actualizar el monto de este pago."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Validar que el monto sea mayor a 0
+        nuevo_monto = request.data.get("monto")
+        if not nuevo_monto or float(nuevo_monto) <= 0:
+            return Response(
+                {"error": "El monto debe ser un número mayor a 0."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Actualizar el monto y guardar el registro
+        pago.monto = nuevo_monto
+        pago.save()
+
+        return Response(
+            {"message": f"El monto del pago con ID {id} ha sido actualizado a {nuevo_monto}."},
+            status=status.HTTP_200_OK
+        )
 
 class ListarPagosPorUsuario(APIView):
     """
