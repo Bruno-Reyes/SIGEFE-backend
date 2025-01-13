@@ -35,7 +35,8 @@ ALLOWED_HOSTS = ['*']
 
 CORS_ALLOW_ALL_ORIGINS = True
 
-
+# Agregar la configuración API_URL con un valor predeterminado
+API_URL = config('API_URL', default='http://localhost:8000/api')
 
 # Application definition
 

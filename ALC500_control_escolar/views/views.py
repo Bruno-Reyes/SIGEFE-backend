@@ -6,7 +6,6 @@ from rest_framework.decorators import permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import action
-from ALC200_asignacion.models.models import HistorialAsignacion, CentroComunitario
 from django.db import models
 from rest_framework.views import APIView
 from ALC500_control_escolar.models.models import HistorialMigratorio
@@ -47,6 +46,16 @@ class CalificacionesViewSet(viewsets.ModelViewSet):
     queryset = Calificaciones.objects.all()
     serializer_class = CalificacionesSerializer
 
+    def get_queryset(self):
+        queryset = Calificaciones.objects.all()
+        id_estudiante = self.request.query_params.get('id_estudiante__in', None)
+        
+        if id_estudiante is not None:
+            id_estudiante_list = id_estudiante.split(',')
+            queryset = queryset.filter(id_estudiante__in=id_estudiante_list)
+        
+        return queryset
+
     @action(detail=False, methods=['post'])
     def bulk_create(self, request):
         email = request.data[0].get('email')  # Obtener el email del primer elemento de la lista
@@ -58,7 +67,7 @@ class CalificacionesViewSet(viewsets.ModelViewSet):
         token = request.headers.get('Authorization').split(' ')[1]
 
         # Obtener el CCT del LEC
-        lec_response = requests.get(f"http://localhost:8000/api/asignacion/lecs?email={email}", headers={"Authorization": f"Bearer {token}"})
+        lec_response = requests.get(f"{settings.API_URL}/asignacion/lecs?email={email}", headers={"Authorization": f"Bearer {token}"})
         if lec_response.status_code != 200:
             return Response({"error": "No se pudo obtener el CCT del LEC."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
@@ -81,13 +90,33 @@ class CalificacionesViewSet(viewsets.ModelViewSet):
             if estudiante.centro_educativo != cct_centro_asignado:
                 return Response({"error": f"El LEC no tiene control sobre el estudiante {estudiante.id}."}, status=status.HTTP_403_FORBIDDEN)
 
-        serializer = CalificacionesSerializer(data=request.data, many=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            print("Errores de validación:", serializer.errors)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        for calificacion_data in request.data:
+            id_estudiante = calificacion_data['id_estudiante']
+            materia = calificacion_data['materia']
+            bimestre = calificacion_data['bimestre']
+
+            # Buscar si ya existe una calificación para el mismo estudiante, materia y bimestre
+            calificacion_existente = Calificaciones.objects.filter(
+                id_estudiante=id_estudiante,
+                materia=materia,
+                bimestre=bimestre
+            ).first()
+
+            if calificacion_existente:
+                # Si existe, actualizar la calificación
+                calificacion_existente.calificacion = calificacion_data['calificacion']
+                calificacion_existente.promedio = calificacion_data['promedio']
+                calificacion_existente.save()
+            else:
+                # Si no existe, crear una nueva calificación
+                serializer = CalificacionesSerializer(data=calificacion_data)
+                if serializer.is_valid():
+                    serializer.save()
+                else:
+                    print("Errores de validación:", serializer.errors)
+                    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({"message": "Calificaciones registradas correctamente."}, status=status.HTTP_201_CREATED)
 
 class HistorialMigratorioView(APIView):
     def post(self, request):
@@ -107,7 +136,7 @@ class HistorialMigratorioView(APIView):
             token = request.headers.get('Authorization').split(' ')[1]
 
             # Obtener el CCT del LEC
-            lec_response = requests.get(f"http://localhost:8000/api/asignacion/lecs?email={email}", headers={"Authorization": f"Bearer {token}"})
+            lec_response = requests.get(f"{settings.API_URL}/asignacion/lecs?email={email}", headers={"Authorization": f"Bearer {token}"})
             if lec_response.status_code != 200:
                 return Response({"error": "No se pudo obtener el CCT del LEC."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
