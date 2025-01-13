@@ -8,6 +8,8 @@ from rest_framework import status
 from rest_framework.decorators import action
 from ALC200_asignacion.models.models import HistorialAsignacion, CentroComunitario
 from django.db import models
+from rest_framework.views import APIView
+from ALC500_control_escolar.models.models import HistorialMigratorio
 
 @permission_classes([AllowAny])
 class EstudianteViewSet(viewsets.ModelViewSet):
@@ -53,22 +55,51 @@ class CalificacionesViewSet(viewsets.ModelViewSet):
             print("Errores de validación:", serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@permission_classes([AllowAny])
-class HistorialMigratorioViewSet(viewsets.ViewSet):
-    def list(self, request):
-        nombre = request.query_params.get('nombre', None)
-        if nombre:
-            estudiantes = Estudiante.objects.filter(nombre__icontains=nombre)
-            historial = []
-            for estudiante in estudiantes:
-                asignaciones = HistorialAsignacion.objects.filter(lec__nombre=estudiante.nombre)
-                for asignacion in asignaciones:
-                    centro = asignacion.centro
-                    historial.append({
-                        'cct': centro.clave_centro_trabajo,
-                        'estado': centro.estado,
-                        'municipio': centro.municipio,
-                        'localidad': centro.nombre_localidad,
-                    })
-            return Response(historial, status=status.HTTP_200_OK)
-        return Response([], status=status.HTTP_200_OK)
+class HistorialMigratorioView(APIView):
+    def post(self, request):
+        id_estudiante = request.data.get('id_estudiante')
+        fecha_inscripcion = request.data.get('fecha_inscripcion')
+        clave_centro_trabajo = request.data.get('clave_centro_trabajo')
+
+        try:
+            # Convertir la fecha de inscripción al formato correcto
+            fecha_inscripcion = fecha_inscripcion.split('T')[0]
+            print(f"Registrando historial migratorio - id_estudiante: {id_estudiante}, fecha_inscripcion: {fecha_inscripcion}, clave_centro_trabajo: {clave_centro_trabajo}")
+            historial = HistorialMigratorio.objects.create(
+                id_estudiante_id=id_estudiante,
+                fecha_inscripcion=fecha_inscripcion,
+                clave_centro_trabajo=clave_centro_trabajo
+            )
+            historial.save()
+            print("Historial migratorio registrado correctamente")
+            return Response({"message": "Historial migratorio registrado correctamente."}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            print(f"Error al registrar el historial migratorio: {str(e)}")
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def get(self, request):
+        id_estudiante = request.query_params.get('id_estudiante')
+        if not id_estudiante:
+            print("Error: Se requiere id_estudiante.")
+            return Response({"error": "Se requiere id_estudiante."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            print(f"Obteniendo historial migratorio para id_estudiante: {id_estudiante}")
+            historial = HistorialMigratorio.objects.filter(id_estudiante_id=id_estudiante)
+            if not historial.exists():
+                print(f"No se encontró historial migratorio para id_estudiante: {id_estudiante}")
+            else:
+                print(f"Historial migratorio encontrado para id_estudiante: {id_estudiante}")
+            data = [
+                {
+                    "id_estudiante": item.id_estudiante_id,
+                    "fecha_inscripcion": item.fecha_inscripcion,
+                    "clave_centro_trabajo": item.clave_centro_trabajo
+                }
+                for item in historial
+            ]
+            print(f"Historial migratorio obtenido: {data}")
+            return Response(data, status=status.HTTP_200_OK)
+        except Exception as e:
+            print(f"Error al obtener el historial migratorio: {str(e)}")
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
