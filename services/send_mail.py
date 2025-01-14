@@ -31,3 +31,6 @@ def send_mail(destination: str, subject: str, body: str, token: str):
             "Authorization": f"Bearer {token}"
         }
     )
+    
+    
+    

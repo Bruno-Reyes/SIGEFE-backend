@@ -6,8 +6,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
+from services.send_mail import send_mail
 from ALC000_sistema_base.models.models import Usuario
 from ALC000_sistema_base.serializers import UsuarioSerializer
+from utils.mensajes_predefinidos import mensaje_asignacion_beca, mensaje_registro_pago, mensaje_confirmacion_pago, mensaje_rechazo_pago, mensaje_eliminacion_pago
 from ALC400_apoyos_economicos.models.models import PagoApoyo
 from ALC400_apoyos_economicos.serializers import PagoApoyoSerializer
 from ALC000_sistema_base.models.models import Usuario, TipoUsuario
@@ -111,7 +113,6 @@ class RegistrarPagoAPIView(APIView):
 
     def post(self, request):
         user = request.user
-        print(user)
 
         # Validar que el usuario autenticado tenga permisos para registrar pagos
         if user.tipo_usuario != "coord_nac_rrhh":
@@ -147,11 +148,34 @@ class RegistrarPagoAPIView(APIView):
         }, context={"request": request})
 
         if serializer.is_valid():
-            serializer.save()
-            return Response(
-                {"message": "Pago registrado exitosamente.", "data": serializer.data},
-                status=status.HTTP_201_CREATED
-            )
+            pago = serializer.save()
+
+            # Obtener información para el correo
+            lec_name = usuario_receptor.email
+            destinatario = usuario_receptor.email
+
+            # Generar el mensaje
+            mensaje = mensaje_registro_pago(lec_name, monto)
+
+            # Enviar el correo
+            try:
+                token = request.headers.get('Authorization', '').replace('Bearer ', '')
+                send_mail(
+                    destination=destinatario,
+                    subject="Registro de Pago",
+                    body=mensaje,
+                    token=token
+                )
+                return Response(
+                    {"message": "Pago registrado exitosamente y correo enviado.", "data": serializer.data},
+                    status=status.HTTP_201_CREATED
+                )
+            except Exception as e:
+                return Response(
+                    {"error": f"No se pudo enviar el correo: {str(e)}"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ActualizarMontoPagoAPIView(APIView):
@@ -228,13 +252,42 @@ class RechazarPagoAPIView(APIView):
             # Obtener el registro de PagoApoyo por ID
             pago = PagoApoyo.objects.get(id=id)
         except PagoApoyo.DoesNotExist:
-            return Response({"error": "El registro de pago no existe."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "El registro de pago no existe."},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
         # Actualizar el campo confirmacion_lec a 'no_recibido'
         pago.confirmacion_lec = 'no_recibido'
         pago.save()
 
-        return Response({"message": f"El pago con ID {id} ha sido rechazado."}, status=status.HTTP_200_OK)
+        # Obtener información para el correo
+        lec_name = pago.usuario.email
+        monto = pago.monto
+        destinatario = pago.usuario.email
+
+        # Generar el mensaje
+        mensaje = mensaje_rechazo_pago(lec_name, monto)
+
+        # Enviar el correo
+        try:
+            token = request.headers.get('Authorization', '').replace('Bearer ', '')
+            send_mail(
+                destination=destinatario,
+                subject="Rechazo de Pago",
+                body=mensaje,
+                token=token
+            )
+            return Response(
+                {"message": f"El pago con ID {id} ha sido rechazado y el correo fue enviado."},
+                status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"No se pudo enviar el correo: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
     
 class ConfirmarPagoAPIView(APIView):
     """
@@ -248,17 +301,45 @@ class ConfirmarPagoAPIView(APIView):
             # Obtener el registro de PagoApoyo por ID
             pago = PagoApoyo.objects.get(id=id)
         except PagoApoyo.DoesNotExist:
-            return Response({"error": "El registro de pago no existe."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "El registro de pago no existe."},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
         # Actualizar el campo confirmacion_lec a 'recibido'
         pago.confirmacion_lec = 'recibido'
         pago.save()
 
-        return Response({"message": f"El pago con ID {id} ha sido confirmado."}, status=status.HTTP_200_OK)
+        # Obtener información para el correo
+        lec_name = pago.usuario.email
+        monto = pago.monto
+        destinatario = pago.usuario.email
+
+        # Generar el mensaje
+        mensaje = mensaje_confirmacion_pago(lec_name, monto)
+
+        # Enviar el correo
+        try:
+            token = request.headers.get('Authorization', '').replace('Bearer ', '')
+            send_mail(
+                destination=destinatario,
+                subject="Confirmación de Pago",
+                body=mensaje,
+                token=token
+            )
+            return Response(
+                {"message": f"El pago con ID {id} ha sido confirmado y el correo fue enviado."},
+                status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"No se pudo enviar el correo: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class PagosPendientesAPIView(APIView):
     """
-    Endpoint para obtener la lista de pagos pendientes.
+    Endpoint para obtener la lista de pagos pendientes, incluyendo el nombre del usuario.
     GET: /api/pagos/pendientes/
     """
     permission_classes = [IsAuthenticated]
@@ -266,19 +347,32 @@ class PagosPendientesAPIView(APIView):
     def get(self, request):
         # Filtrar los pagos pendientes según el usuario
         if request.user.email == "coord_nac_rrhh@example.com":
-            # `coord_nac_rrhh` puede ver todos los pagos pendientes
-            pagos_pendientes = PagoApoyo.objects.filter(estatus="pendiente")
+            pagos_pendientes = PagoApoyo.objects.filter(estatus="pendiente").select_related('usuario')
         elif request.user.tipo_usuario == TipoUsuario.LIDER_LEC:
-            # Un `LIDER_LEC` solo puede ver sus pagos pendientes
-            pagos_pendientes = PagoApoyo.objects.filter(usuario=request.user, estatus="pendiente")
+            pagos_pendientes = PagoApoyo.objects.filter(usuario=request.user, estatus="pendiente").select_related('usuario')
         else:
             return Response(
                 {"error": "No tienes permiso para acceder a los pagos pendientes."},
                 status=403
             )
 
-        serializer = PagoApoyoSerializer(pagos_pendientes, many=True)
-        return Response(serializer.data, status=200)
+        # Serializar los datos incluyendo el nombre del usuario
+        data = [
+            {
+                "id": pago.id,
+                "usuario_id": pago.usuario.id,
+                "nombre_usuario": f"{pago.usuario.first_name} {pago.usuario.last_name}",
+                "concepto": pago.concepto,
+                "monto": pago.monto,
+                "fecha_pago": pago.fecha_pago,
+                "estatus": pago.estatus,
+                "registrado_por": pago.registrado_por,
+                "confirmacion_lec": pago.confirmacion_lec,
+            }
+            for pago in pagos_pendientes
+        ]
+
+        return Response(data, status=status.HTTP_200_OK)
 
 
 class ALC004TiposBecasListView(APIView):
@@ -311,11 +405,42 @@ class LideresConBecasAPIView(APIView):
         return Response(data, status=200)
     
 class AsignarBecaView(APIView):
+    """
+    Endpoint para asignar una beca a un usuario y enviar un correo de notificación.
+    POST: /api/lec-becas/asignar/
+    """
     def post(self, request):
         serializer = ALC401LecBecasSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            beca = serializer.save()
+
+            # Obtener información para el correo
+            lec_name = beca.usuario.email
+            tipo_beca = beca.tipo_beca.tipo
+            destinatario = beca.usuario.email
+
+            # Generar el mensaje
+            mensaje = mensaje_asignacion_beca(lec_name, tipo_beca)
+
+            # Enviar el correo
+            try:
+                token = request.headers.get('Authorization', '').replace('Bearer ', '')
+                send_mail(
+                    destination=destinatario,
+                    subject="Asignación de Beca",
+                    body=mensaje,
+                    token=token
+                )
+                return Response(
+                    {"message": "Beca asignada y correo enviado correctamente.", "data": serializer.data},
+                    status=status.HTTP_201_CREATED
+                )
+            except Exception as e:
+                return Response(
+                    {"error": f"No se pudo enviar el correo: {str(e)}"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class LecBecasListView(generics.ListAPIView):
@@ -332,3 +457,112 @@ class LecBecasPorUsuarioView(generics.ListAPIView):
     def get_queryset(self):
         usuario_id = self.kwargs['usuario_id']
         return ALC401LecBecas.objects.filter(usuario_id=usuario_id).select_related('tipo_beca', 'usuario')
+    
+    
+class EditarAsignacionBecaAPIView(APIView):
+    """
+    Endpoint para editar la asignación de beca de un usuario.
+    PATCH: /api/lec-becas/editar/<int:usuario_id>/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, usuario_id):
+        try:
+            # Buscar la asignación de beca del usuario
+            asignacion_beca = ALC401LecBecas.objects.get(usuario_id=usuario_id)
+        except ALC401LecBecas.DoesNotExist:
+            return Response(
+                {"error": "No se encontró una asignación de beca para este usuario."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Validar que el tipo de beca proporcionado existe
+        tipo_beca_id = request.data.get("tipo_beca_id")
+        if not tipo_beca_id:
+            return Response({"error": "El campo 'tipo_beca_id' es obligatorio."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            tipo_beca = ALC004TiposBecas.objects.get(id=tipo_beca_id)
+        except ALC004TiposBecas.DoesNotExist:
+            return Response({"error": "El tipo de beca proporcionado no existe."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Actualizar la asignación de beca
+        asignacion_beca.tipo_beca = tipo_beca
+        asignacion_beca.save()
+
+        # Obtener información para el correo
+        lec_name = asignacion_beca.usuario.email
+        tipo_beca_nombre = tipo_beca.tipo
+        destinatario = asignacion_beca.usuario.email
+
+        # Generar el mensaje
+        mensaje = mensaje_asignacion_beca(lec_name, tipo_beca_nombre)
+
+        # Enviar el correo
+        try:
+            token = request.headers.get('Authorization', '').replace('Bearer ', '')
+            send_mail(
+                destination=destinatario,
+                subject="Actualización de Asignación de Beca",
+                body=mensaje,
+                token=token
+            )
+            return Response(
+                {"message": f"La asignación de beca del usuario con ID {usuario_id} ha sido actualizada y el correo fue enviado."},
+                status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"No se pudo enviar el correo: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+            
+            
+class EliminarPagoAPIView(APIView):
+    """
+    Endpoint para eliminar un registro de PagoApoyo.
+    DELETE: /api/pagos/eliminar/<int:id>/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, id):
+        try:
+            # Obtener el registro de PagoApoyo por ID
+            pago = PagoApoyo.objects.get(id=id)
+        except PagoApoyo.DoesNotExist:
+            return Response({"error": "El registro de pago no existe."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Validar permisos: solo `coord_nac_rrhh@example.com` puede eliminar pagos
+        if request.user.email != "coord_nac_rrhh@example.com":
+            return Response(
+                {"error": "No tienes permiso para eliminar registros de pago."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Obtener información para el correo antes de eliminar
+        lec_name = pago.usuario.email
+        monto = pago.monto
+        destinatario = pago.usuario.email
+
+        # Eliminar el registro de la base de datos
+        pago.delete()
+
+        # Generar y enviar el mensaje de notificación
+        mensaje = mensaje_eliminacion_pago(lec_name, monto)
+        try:
+            token = request.headers.get('Authorization', '').replace('Bearer ', '')
+            send_mail(
+                destination=destinatario,
+                subject="Eliminación de Pago",
+                body=mensaje,
+                token=token
+            )
+            return Response(
+                {"message": f"El pago con ID {id} ha sido eliminado y el correo fue enviado."},
+                status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"No se pudo enviar el correo: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
