@@ -1,5 +1,5 @@
 from rest_framework import viewsets
-from ALC500_control_escolar.models.models import Estudiante, Calificaciones
+from ALC500_control_escolar.models.models import Estudiante, Calificaciones, ReinscripcionEstudiante
 from ALC500_control_escolar.serializer import CalificacionesSerializer, EstudianteSerializer
 from rest_framework.permissions import AllowAny
 from rest_framework.decorators import permission_classes
@@ -49,10 +49,16 @@ class CalificacionesViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = Calificaciones.objects.all()
         id_estudiante = self.request.query_params.get('id_estudiante__in', None)
-        
+        grado = self.request.query_params.get('grado', None)
+        grupo = self.request.query_params.get('grupo', None)
+
         if id_estudiante is not None:
             id_estudiante_list = id_estudiante.split(',')
             queryset = queryset.filter(id_estudiante__in=id_estudiante_list)
+        if grado is not None:
+            queryset = queryset.filter(grado=grado)
+        if grupo is not None:
+            queryset = queryset.filter(grupo=grupo)
         
         return queryset
 
@@ -94,14 +100,15 @@ class CalificacionesViewSet(viewsets.ModelViewSet):
             id_estudiante = calificacion_data['id_estudiante']
             materia = calificacion_data['materia']
             bimestre = calificacion_data['bimestre']
-
             # Buscar si ya existe una calificación para el mismo estudiante, materia y bimestre
             calificacion_existente = Calificaciones.objects.filter(
                 id_estudiante=id_estudiante,
                 materia=materia,
-                bimestre=bimestre
+                bimestre=bimestre,
+                grado=grado,
+                grupo=grupo
             ).first()
-
+            #print(f"calificacion_data: {calificacion_data}")
             if calificacion_existente:
                 # Si existe, actualizar la calificación
                 calificacion_existente.calificacion = calificacion_data['calificacion']
@@ -198,4 +205,40 @@ class HistorialMigratorioView(APIView):
             return Response(data, status=status.HTTP_200_OK)
         except Exception as e:
             print(f"Error al obtener el historial migratorio: {str(e)}")
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class ReinscribirEstudianteView(APIView):
+    def post(self, request):
+        id_estudiante = request.data.get('id_estudiante')
+        nuevo_nivel_educativo = request.data.get('nuevo_nivel_educativo')
+        nuevo_grado = request.data.get('nuevo_grado')
+        nuevo_grupo = request.data.get('nuevo_grupo')
+
+        try:
+            estudiante = Estudiante.objects.get(id=id_estudiante)
+            ReinscripcionEstudiante.objects.create(
+                id_lec=estudiante.id_lec,
+                id_estudiante_id=id_estudiante,
+                nombre=estudiante.nombre,
+                apellido_paterno=estudiante.apellido_paterno,
+                apellido_materno=estudiante.apellido_materno,
+                edad=estudiante.edad,
+                grado=estudiante.grado,
+                grupo=estudiante.grupo,
+                promedio_global=estudiante.promedio_global,
+                centro_educativo=estudiante.centro_educativo,
+                procedencia=estudiante.procedencia,
+                contacto=estudiante.contacto,
+                nivel_educativo=estudiante.nivel_educativo,
+            )
+
+            estudiante.nivel_educativo = nuevo_nivel_educativo
+            estudiante.grado = nuevo_grado
+            estudiante.grupo = nuevo_grupo
+            estudiante.save()
+
+            return Response({"message": "Estudiante reinscrito correctamente."}, status=status.HTTP_201_CREATED)
+        except Estudiante.DoesNotExist:
+            return Response({"error": "Estudiante no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
