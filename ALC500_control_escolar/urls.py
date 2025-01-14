@@ -11,4 +11,5 @@ urlpatterns = [
     path('calificaciones/bulk_create/', CalificacionesViewSet.as_view({'post': 'bulk_create'})),
     path('historial_migratorio/', HistorialMigratorioView.as_view(), name='historial_migratorio'),
     path('reinscribir_estudiante/', ReinscribirEstudianteView.as_view(), name='reinscribir_estudiante'),
+    path('reinscribir_estudiante/<int:id_estudiante>/', ReinscribirEstudianteView.as_view(), name='reinscribir_estudiante_get'),
 ]

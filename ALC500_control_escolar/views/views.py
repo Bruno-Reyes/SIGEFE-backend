@@ -242,3 +242,32 @@ class ReinscribirEstudianteView(APIView):
             return Response({"error": "Estudiante no encontrado."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+    def get(self, request, id_estudiante):
+        try:
+            reinscripciones = ReinscripcionEstudiante.objects.filter(id_estudiante_id=id_estudiante)
+            if not reinscripciones.exists():
+                return Response({"message": "No se encontraron reinscripciones para este estudiante."}, status=status.HTTP_404_NOT_FOUND)
+            
+            data = [
+                {
+                    "id": reinscripcion.id,
+                    "id_lec": reinscripcion.id_lec,
+                    "nombre": reinscripcion.nombre,
+                    "apellido_paterno": reinscripcion.apellido_paterno,
+                    "apellido_materno": reinscripcion.apellido_materno,
+                    "edad": reinscripcion.edad,
+                    "grado": reinscripcion.grado,
+                    "grupo": reinscripcion.grupo,
+                    "promedio_global": float(reinscripcion.promedio_global),
+                    "centro_educativo": reinscripcion.centro_educativo,
+                    "procedencia": reinscripcion.procedencia,
+                    "contacto": reinscripcion.contacto,
+                    "nivel_educativo": reinscripcion.nivel_educativo,
+                }
+                for reinscripcion in reinscripciones
+            ]
+            return Response({"reinscripciones": data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)   
+    
