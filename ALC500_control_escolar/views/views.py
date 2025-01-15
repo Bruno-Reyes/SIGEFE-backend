@@ -63,6 +63,7 @@ class CalificacionesViewSet(viewsets.ModelViewSet):
         return queryset
 
     @action(detail=False, methods=['post'])
+    
     def bulk_create(self, request):
         email = request.data[0].get('email')  # Obtener el email del primer elemento de la lista
         print(email)
