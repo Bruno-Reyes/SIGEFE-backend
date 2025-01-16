@@ -31,6 +31,8 @@ class CentroComunitario(models.Model):
     nivel_educativo = models.CharField(max_length=100)  # Corregir a max_length
     domicilio = models.CharField(max_length=255)
     vacantes = models.IntegerField()
+    latitud = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
+    longitud = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
 
     def __str__(self):
         return self.clave_centro_trabajo

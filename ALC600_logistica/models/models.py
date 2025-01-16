@@ -12,8 +12,8 @@ class EquipoDisponible( models.Model ):
     CATEGORIAS = [
         ('Papelería', 'Papelería'),
         ('Utilería', 'Utilería'),
-        ('Tecnología', 'Tecnología'),
-        ('Mobiliario', 'Mobiliario')
+        ('Mobiliario', 'Mobiliario'),
+        ('Ropa y Calzado', 'Ropa y Calzado'),
     ]
 
     categoria = models.CharField( max_length = 18, choices = CATEGORIAS )
@@ -26,3 +26,8 @@ class AsignacionMaterial(models.Model):
 
     def __str__(self):
         return f"{self.cantidad_asignada} x {self.equipo.nombre_equipo} -> {self.centro.clave_centro_trabajo}"
+
+class CentrosDistribucion(models.Model): 
+    estado = models.CharField(max_length=100)
+    latitud = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)    
+    longitud = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)

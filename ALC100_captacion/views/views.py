@@ -231,7 +231,10 @@ class CambiarAceptacion(APIView):
         except Inscripciones.DoesNotExist:
             return Response({"error": "Inscripcion no encontrado."}, status=status.HTTP_404_NOT_FOUND)
 
+        print(inscripcion)
         detalles_usuario = inscripcion.usuario
+        print(detalles_usuario)
+        
         values = {
             "nombres": detalles_usuario.nombres,
             "correo": detalles_usuario.usuario.email,
