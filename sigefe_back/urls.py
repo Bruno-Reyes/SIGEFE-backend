@@ -27,4 +27,5 @@ urlpatterns = [
     path('api/logistica/', include('ALC600_logistica.urls')),
     path('api/pagos/', include('ALC400_apoyos_economicos.urls')),
     path('api/control_escolar/', include('ALC500_control_escolar.urls')),
+    path('api/capacitacion/', include('ALC300_capacitacion.urls')),
 ]

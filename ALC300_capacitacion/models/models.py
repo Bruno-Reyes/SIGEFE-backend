@@ -1,3 +1,14 @@
 from django.db import models
+from ALC200_asignacion.models.models import CentroComunitario, LEC
 
-# Create your models here.
+class PlanCapacitacion(models.Model):
+    centro = models.ForeignKey(CentroComunitario, on_delete=models.CASCADE)
+    lecs = models.ManyToManyField(LEC)
+    num_sesiones = models.IntegerField()
+    modalidad = models.CharField(max_length=50)
+    fechas_sesiones = models.JSONField()
+    calificaciones = models.JSONField(default=dict)  # Nueva columna para calificaciones
+    asistencias = models.JSONField(default=dict)     # Nueva columna para asistencias
+
+    def __str__(self):
+        return f"Plan de Capacitación para {self.centro}"
