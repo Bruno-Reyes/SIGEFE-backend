@@ -25,11 +25,74 @@ from utils.mensajes_predefinidos import mensaje_registro_exitoso, mensaje_acepta
 
 
 class ConvocatoriaViewSet(viewsets.ModelViewSet):
+    
     queryset = Convocatoria.objects.all()
     serializer_class = ConvocatoriaSerializer
 
-# Endpoint para obtener la lista de convocatorias activas
-# GET /api/convocatorias/activas/
+    def validate_dates_and_overlap(self, lugar, fecha_limite, fecha_resultados):
+        fecha_actual = timezone.now().date()
+        
+        # Validar que las fechas no sean anteriores a la actual
+        if fecha_limite < fecha_actual:
+            return False, "La fecha límite de registro no puede ser anterior a la fecha actual"
+        
+        if fecha_resultados < fecha_actual:
+            return False, "La fecha de entrega de resultados no puede ser anterior a la fecha actual"
+            
+        if fecha_resultados < fecha_limite:
+            return False, "La fecha de resultados no puede ser anterior a la fecha límite de registro"
+        
+        # Validar traslape de convocatorias
+        convocatorias_existentes = Convocatoria.objects.filter(
+            lugar_convocatoria=lugar,
+            fecha_limite_registro__gte=fecha_actual
+        )
+        
+        if convocatorias_existentes.exists():
+            return False, "Ya existe una convocatoria activa para este lugar"
+            
+        return True, ""
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            lugar = serializer.validated_data['lugar_convocatoria']
+            fecha_limite = serializer.validated_data['fecha_limite_registro']
+            fecha_resultados = serializer.validated_data['fecha_entrega_resultados']
+            
+            is_valid, error_message = self.validate_dates_and_overlap(lugar, fecha_limite, fecha_resultados)
+            if not is_valid:
+                return Response(
+                    {"error": error_message},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            return super().create(request, *args, **kwargs)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        
+        if serializer.is_valid():
+            lugar = serializer.validated_data.get('lugar_convocatoria', instance.lugar_convocatoria)
+            fecha_limite = serializer.validated_data.get('fecha_limite_registro', instance.fecha_limite_registro)
+            fecha_resultados = serializer.validated_data.get('fecha_entrega_resultados', instance.fecha_entrega_resultados)
+            
+            # Solo validar si se están actualizando las fechas o el lugar
+            if 'lugar_convocatoria' in serializer.validated_data or \
+               'fecha_limite_registro' in serializer.validated_data or \
+               'fecha_entrega_resultados' in serializer.validated_data:
+                
+                is_valid, error_message = self.validate_dates_and_overlap(lugar, fecha_limite, fecha_resultados)
+                if not is_valid:
+                    return Response(
+                        {"error": error_message},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                
+            return super().update(request, *args, **kwargs)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ConvocatoriasActivas(APIView):
