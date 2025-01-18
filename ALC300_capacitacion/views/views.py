@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 @api_view(['POST'])
 def registrar_plan_capacitacion(request):
+    
     data = request.data
     centro_id = data.get('centro_id')
     lecs_ids = data.get('lecs_ids')
@@ -21,6 +22,24 @@ def registrar_plan_capacitacion(request):
     tipo_capacitacion = data.get('tipo_capacitacion')  # Obtener tipo de capacitación
 
     try:
+        # Verificar que los LECs no tengan planes activos
+        lecs_con_planes_activos = []
+        for lec_id in lecs_ids:
+            planes_activos = PlanCapacitacion.objects.filter(
+                lecs__id=lec_id,
+                estado=True
+            )
+            if planes_activos.exists():
+                lec = LEC.objects.get(id=lec_id)
+                lecs_con_planes_activos.append(f"{lec.nombre} {lec.apellido_paterno}")
+
+        if lecs_con_planes_activos:
+            return Response({
+                'error': f'Los siguientes LECs tienen planes de capacitación activos: {", ".join(lecs_con_planes_activos)}',
+                'lecs_con_planes': lecs_con_planes_activos
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Si no hay planes activos, proceder con la creación
         centro = CentroComunitario.objects.get(id=centro_id)
         lecs = LEC.objects.filter(id__in=lecs_ids)
         plan = PlanCapacitacion.objects.create(
@@ -51,6 +70,7 @@ def obtener_lecs_pendientes(request):
                     'numSesiones': plan.num_sesiones,
                     'modalidad': plan.modalidad,
                     'fechasSesiones': plan.fechas_sesiones,
+                    'estado': plan.estado
                 }
                 # Agregar calificaciones y asistencias si existen
                 if str(lec.id) in plan.calificaciones:
@@ -67,6 +87,7 @@ def obtener_lecs_pendientes(request):
 
 @api_view(['POST'])
 def registrar_asistencia(request):
+
     data = request.data
     lecs = data.get('lecs', [])
     print("Datos recibidos:", lecs)
@@ -77,6 +98,7 @@ def registrar_asistencia(request):
             calificaciones = {}
             asistencias = {}
             
+            # Primero recolectamos todas las asistencias y calificaciones
             for key, value in lec_data.items():
                 if key.startswith('S'):
                     sesion_num = int(key[1:]) - 1
@@ -84,6 +106,19 @@ def registrar_asistencia(request):
                 elif key.startswith('Asistencia'):
                     sesion_num = int(key[10:]) - 1
                     asistencias[str(sesion_num)] = value
+            
+            # Validar que cada asistencia marcada como True tenga su calificación
+            for sesion_num, asistencia in asistencias.items():
+                if asistencia and str(sesion_num) not in calificaciones:
+                    return Response(
+                        {'error': f'La sesión {int(sesion_num) + 1} tiene asistencia pero no tiene calificación'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                if asistencia and calificaciones[str(sesion_num)] is None:
+                    return Response(
+                        {'error': f'La sesión {int(sesion_num) + 1} tiene asistencia pero no tiene calificación'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
 
             lec = LEC.objects.get(id=lec_id)
             plan = PlanCapacitacion.objects.filter(lecs=lec).first()
@@ -99,9 +134,24 @@ def registrar_asistencia(request):
                 
                 plan.calificaciones = plan_calificaciones
                 plan.asistencias = plan_asistencias
+
+                # Verificar si todas las asistencias están marcadas como true
+                todas_asistencias = True
+                for lec_asistencias in plan_asistencias.values():
+                    if not todas_asistencias:
+                        break
+                    for asistencia in lec_asistencias.values():
+                        if not asistencia:
+                            todas_asistencias = False
+                            break
+
+                # Actualizar el estado del plan si todas las asistencias son true
+                if todas_asistencias:
+                    plan.estado = False
+                
                 plan.save()
 
-        return Response({'message': 'Asistencia registrada exitosamente.'}, status=status.HTTP_201_CREATED)
+        return Response({'message': 'Asistencia y calificaciones registradas exitosamente.'}, status=status.HTTP_201_CREATED)
     except Exception as e:
         print(f"Error: {str(e)}")
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
