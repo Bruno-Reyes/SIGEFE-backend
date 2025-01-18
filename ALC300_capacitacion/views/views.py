@@ -18,6 +18,7 @@ def registrar_plan_capacitacion(request):
     num_sesiones = data.get('num_sesiones')
     modalidad = data.get('modalidad')
     fechas_sesiones = data.get('fechas_sesiones')
+    tipo_capacitacion = data.get('tipo_capacitacion')  # Obtener tipo de capacitación
 
     try:
         centro = CentroComunitario.objects.get(id=centro_id)
@@ -26,7 +27,8 @@ def registrar_plan_capacitacion(request):
             centro=centro,
             num_sesiones=num_sesiones,
             modalidad=modalidad,
-            fechas_sesiones=fechas_sesiones
+            fechas_sesiones=fechas_sesiones,
+            tipo_capacitacion=tipo_capacitacion  # Guardar tipo de capacitación
         )
         plan.lecs.set(lecs)
         plan.save()
@@ -106,6 +108,71 @@ def registrar_asistencia(request):
 
 @api_view(['GET'])
 def obtener_progreso_lec(request):
+    centro_id = request.query_params.get('centro_id')
+    logger.info(f"Recibida solicitud de progreso para centro_id: {centro_id}")
+    
+    try:
+        # Verificar si se recibió el centro_id
+        if not centro_id:
+            logger.error("No se proporcionó centro_id en la solicitud")
+            return Response(
+                {'error': 'centro_id es requerido'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Buscar el Centro Comunitario
+        try:
+            centro = CentroComunitario.objects.get(id=centro_id)
+            logger.info(f"Centro encontrado: {centro.id}")
+        except CentroComunitario.DoesNotExist:
+            logger.error(f"No se encontró Centro con id: {centro_id}")
+            return Response(
+                {'error': f'No se encontró Centro con id: {centro_id}'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Buscar planes de capacitación
+        planes = PlanCapacitacion.objects.filter(centro=centro)
+        logger.info(f"Planes encontrados: {planes.count()}")
+
+        progreso_data = []
+        for plan in planes:
+            logger.info(f"Procesando plan {plan.id}")
+            for lec in plan.lecs.all():
+                asistencias = plan.asistencias.get(str(lec.id), {})
+                calificaciones_dict = plan.calificaciones.get(str(lec.id), {})
+                
+                # Convertir el diccionario de calificaciones a una lista ordenada
+                calificaciones = []
+                for i in range(plan.num_sesiones):
+                    calificaciones.append(calificaciones_dict.get(str(i), None))
+                
+                # Calcular asistencias y promedio
+                num_asistencias = sum(1 for asistencia in asistencias.values() if asistencia)
+                porcentaje_progreso = (num_asistencias / plan.num_sesiones) * 100 if plan.num_sesiones > 0 else 0
+                
+                calificaciones_valores = [cal for cal in calificaciones if cal is not None]
+                promedio = sum(calificaciones_valores) / len(calificaciones_valores) if calificaciones_valores else 0
+
+                plan_data = {
+                    'id': plan.id,
+                    'nombre': f"{lec.nombre} {lec.apellido_paterno} {lec.apellido_materno}",
+                    'tipo_capacitacion': plan.tipo_capacitacion,
+                    'num_sesiones': plan.num_sesiones,
+                    'asistencias': num_asistencias,
+                    'progreso': round(porcentaje_progreso, 2),
+                    'calificaciones': calificaciones,
+                    'promedio': round(promedio, 2)
+                }
+                progreso_data.append(plan_data)
+
+        return Response(progreso_data, status=status.HTTP_200_OK)
+    except Exception as e:
+        logger.error(f"Error al procesar solicitud: {str(e)}", exc_info=True)
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def consultar_capacitacion_lec(request):
     email = request.query_params.get('email')
     logger.info(f"Recibida solicitud de progreso para email: {email}")
     
@@ -160,11 +227,13 @@ def obtener_progreso_lec(request):
                 'asistencias': asistencias,
                 'calificaciones': calificaciones,  # Ahora es una lista ordenada
                 'progreso': round(porcentaje_progreso, 2),
-                'promedio': round(promedio, 2)
+                'promedio': round(promedio, 2),
+                'tipo_capacitacion': plan.tipo_capacitacion  
             }
             progreso_data.append(plan_data)
 
         return Response(progreso_data, status=status.HTTP_200_OK)
     except Exception as e:
         logger.error(f"Error al procesar solicitud: {str(e)}", exc_info=True)
+
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)

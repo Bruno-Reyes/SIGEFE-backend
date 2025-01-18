@@ -60,7 +60,7 @@ class LECListView(APIView):
                 "estado_centro_asignado": lec.estado_centro_asignado if lec.centro_asignado else None,
                 "municipio_centro_asignado": lec.municipio_centro_asignado if lec.centro_asignado else None,
                 "fecha_asignacion": lec.fecha_asignacion.strftime("%Y-%m-%d %H:%M:%S") if lec.fecha_asignacion else None,
-                "inscripcion_id": lec.id  # Asegúrate de incluir inscripcion_id
+                "inscripcion_id": lec.id_usuario
             }
             for lec in lecs
         ]

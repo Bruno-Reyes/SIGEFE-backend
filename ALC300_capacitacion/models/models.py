@@ -9,6 +9,7 @@ class PlanCapacitacion(models.Model):
     fechas_sesiones = models.JSONField()
     calificaciones = models.JSONField(default=dict)  # Nueva columna para calificaciones
     asistencias = models.JSONField(default=dict)     # Nueva columna para asistencias
+    tipo_capacitacion = models.CharField(max_length=50)  # Nuevo campo para tipo de capacitación
 
     def __str__(self):
         return f"Plan de Capacitación para {self.centro}"
