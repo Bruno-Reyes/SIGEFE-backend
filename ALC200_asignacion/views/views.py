@@ -127,7 +127,7 @@ class AsignarCentroLEC(APIView):
             lec = LEC.objects.get(pk=lec_id)
             centro = CentroComunitario.objects.get(id=centro_id)
             
-            # Verificar que el centro tiene vacantes disponibles
+            # Verificar vacantes
             if centro.vacantes <= 0:
                 return Response(
                     {"error": "El centro no tiene vacantes disponibles."}, 
@@ -142,45 +142,43 @@ class AsignarCentroLEC(APIView):
             lec.fecha_asignacion = timezone.now()
             lec.save()
 
-            print(f"LEC {lec.nombre} asignado al centro {centro.clave_centro_trabajo}")
-
-            # Guardar en el historial de asignaciones
+            # Guardar en el historial y actualizar vacantes
             HistorialAsignacion.objects.create(
                 lec=lec,
                 centro=centro,
                 fecha_asignacion=lec.fecha_asignacion
             )
-
-            # Reducir las vacantes del centro
             centro.vacantes -= 1
             centro.save()
 
-            # Autenticar y enviar correo electrónico al LEC asignado
-            token = authenticate()
-            contenido = asignación_centro_exitoso(lec.email, lec.nombre, {
-                "nombre_turno": centro.nombre_turno,
-                "clave_centro_trabajo": centro.clave_centro_trabajo,
-                "estado": centro.estado,
-                "municipio": centro.municipio,
-                "nivel_educativo": centro.nivel_educativo,
-                "codigo_postal": centro.codigo_postal,
-                "domicilio": centro.domicilio
-            }, token)
-            send_mail(destination=lec.email, subject='¡Asignación de centro exitosa!', body=contenido, token=token)
+            email_error = False
+            try:
+                # Intentar enviar el correo
+                token = authenticate()
+                contenido = asignación_centro_exitoso(lec.email, lec.nombre, {
+                    "nombre_turno": centro.nombre_turno,
+                    "clave_centro_trabajo": centro.clave_centro_trabajo,
+                    "estado": centro.estado,
+                    "municipio": centro.municipio,
+                    "nivel_educativo": centro.nivel_educativo,
+                    "codigo_postal": centro.codigo_postal,
+                    "domicilio": centro.domicilio
+                }, token)
+                send_mail(destination=lec.email, subject='¡Asignación de centro exitosa!', body=contenido, token=token)
+            except Exception as e:
+                print(f"Error al enviar el correo: {str(e)}")
+                email_error = True
 
-            return Response(
-                {"message": f"LEC {lec.nombre} asignado al centro {centro.clave_centro_trabajo} exitosamente."},
-                status=status.HTTP_200_OK
-            )
+            return Response({
+                "message": f"LEC {lec.nombre} asignado al centro {centro.clave_centro_trabajo} exitosamente.",
+                "email_error": email_error
+            }, status=status.HTTP_200_OK)
 
         except LEC.DoesNotExist:
-            print("LEC no encontrado.")
             return Response({"error": "LEC no encontrado."}, status=status.HTTP_404_NOT_FOUND)
         except CentroComunitario.DoesNotExist:
-            print("Centro comunitario no encontrado.")
             return Response({"error": "Centro comunitario no encontrado."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            print(f"Error: {str(e)}")
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class EliminarLECView(APIView):

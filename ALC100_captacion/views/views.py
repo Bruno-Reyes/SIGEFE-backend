@@ -185,17 +185,6 @@ class RegistrarCandidato(APIView):
                     estado_cuenta=estado_cuenta_url,
                 )
 
-                # # Crear un registro en el modelo LEC
-                # lec = LEC.objects.create(
-                #     nombre=values["nombres"],
-                #     apellido_paterno=values["apellido_paterno"],
-                #     apellido_materno=values["apellido_materno"],
-                #     estado=values["estado"],
-                #     municipio=values["municipio"],
-                #     localidad=values["localidad"],
-                #     centro_asignado=models.ForeignKey('CentroComunitario', on_delete=models.SET_NULL, null=True, blank=True),
-                # )
-
                 # Inscribir candidato a convocatoria
                 convocatoria=Convocatoria.objects.get(
                     id=values["convocatoria"])
@@ -208,12 +197,16 @@ class RegistrarCandidato(APIView):
                 )
                 
                 # Enviar correo de confirmación
-                token = authenticate()
-                contenido = mensaje_registro_exitoso(values["nombres"])
-                send_mail(destination=values["correo"],subject='¡Registro SIGEFE exitoso!',body=contenido, token=token)
-                
+                email_error = False
+                try:
+                    token = authenticate()
+                    contenido = mensaje_registro_exitoso(values["nombres"])
+                    send_mail(destination=values["correo"],subject='¡Registro SIGEFE exitoso!',body=contenido, token=token)
+                except Exception as e:
+                    print(f"Error al enviar el correo: {str(e)}")
+                    email_error = True
 
-        return Response({"message": "Tu registro ha sido exitoso"})
+        return Response({"message": "Tu registro ha sido exitoso", "email_error": email_error})
 
 @permission_classes([IsAuthenticated])
 class DetallesUsuarioListView(APIView):
@@ -263,24 +256,40 @@ class CambiarEstadoAceptacion(APIView):
     def patch(self, request, pk, action=None):
         try:
             # Obtener el objeto DetallesUsuario
-            detalles_usuario=DetallesUsuario.objects.get(pk=pk)
+            detalles_usuario = DetallesUsuario.objects.get(pk=pk)
         except DetallesUsuario.DoesNotExist:
             return Response({"error": "DetallesUsuario no encontrado."})
 
         # Determinar el estado basado en la acción
         if action == "aceptar":
-            detalles_usuario.estado_aceptacion="Aceptado"
+            detalles_usuario.estado_aceptacion = "Aceptado"
         elif action == "rechazar":
-            detalles_usuario.estado_aceptacion="Rechazado"
+            detalles_usuario.estado_aceptacion = "Rechazado"
         else:
             return Response({"error": "Acción no valida."})
 
         # Guardar el cambio
         detalles_usuario.save()
-        return Response(
-            {"mensaje": "OK"}, status=200,
-        )
-        
+
+        # Enviar correo de notificación
+        email_error = False
+        try:
+            token = authenticate()
+            if action == "aceptar":
+                contenido = mensaje_aceptacion(detalles_usuario.nombres, detalles_usuario.usuario.email)
+                send_mail(destination=detalles_usuario.usuario.email, subject='Aceptación de la CONAFE como LEC', body=contenido, token=token)
+            elif action == "rechazar":
+                contenido = mensaje_rechazo(detalles_usuario.nombres, detalles_usuario.usuario.email)
+                send_mail(destination=detalles_usuario.usuario.email, subject='Rechazo de la CONAFE como LEC', body=contenido, token=token)
+        except Exception as e:
+            print(f"Error al enviar el correo: {str(e)}")
+            email_error = True
+
+        return Response({
+            "mensaje": "OK",
+            "email_error": email_error
+        }, status=200)
+
 @permission_classes([IsAuthenticated])
 class ConsultarConvocatoriasInscripcion(APIView):
     def get(self, request):
@@ -354,19 +363,26 @@ class CambiarAceptacion(APIView):
             lec.detalles_usuario = detalles_usuario  # Asegurarse de asignar detalles_usuario
             lec.save()
             
-            # Enviar correo de aceptación
+            email_error = False
+        try:
+            # Enviar correo de aceptación o rechazo
             token = authenticate()
-            contenido = mensaje_aceptacion(values["nombres"], values["lugar_convocatoria"])
-            send_mail(destination=values["correo"], subject='Aceptacion a la CONAFE como LEC', body=contenido, token=token)
-            
-        elif action == "rechazar":
-            inscripcion.estado_aprobacion = "Rechazado"
-            token = authenticate()
-            contenido = mensaje_rechazo(values["nombres"], values["lugar_convocatoria"])
-            send_mail(destination=values["correo"], subject='Rechazo a la CONAFE como LEC', body=contenido, token=token)
-        else:
-            return Response({"error": "Acción no valida."})
-
+            if action == "aceptar":
+                contenido = mensaje_aceptacion(values["nombres"], values["lugar_convocatoria"])
+                send_mail(destination=values["correo"], subject='Aceptacion de la CONAFE como LEC', body=contenido, token=token)
+            elif action == "rechazar":
+                inscripcion.estado_aprobacion = "Rechazado"
+                contenido = mensaje_rechazo(values["nombres"], values["lugar_convocatoria"])
+                send_mail(destination=values["correo"], subject='Rechazo de la CONAFE como LEC', body=contenido, token=token)
+            else:
+                return Response({"error": "Acción no valida."})
+        except Exception as e:
+            print(f"Error al enviar el correo: {str(e)}")
+            email_error = True
+    
         # Guardar el cambio
         inscripcion.save()
-        return Response({"mensaje": "OK"}, status=200)
+        return Response({
+                "message": f"LEC Validado exitosamente.",
+                "email_error": email_error
+            }, status=status.HTTP_200_OK)
