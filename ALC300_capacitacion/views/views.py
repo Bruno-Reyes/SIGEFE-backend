@@ -7,6 +7,8 @@ from ALC300_capacitacion.models.models import PlanCapacitacion
 from ALC300_capacitacion.serializers import PlanCapacitacionSerializer
 import json
 import logging
+from django.utils import timezone
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +24,28 @@ def registrar_plan_capacitacion(request):
     tipo_capacitacion = data.get('tipo_capacitacion')  # Obtener tipo de capacitación
 
     try:
+        # Validar fechas de sesiones
+        fecha_actual = timezone.now()
+        
+        # Convertir fechas ISO a objetos datetime y validar orden
+        fechas_ordenadas = []
+        for i, fecha in enumerate(fechas_sesiones):
+            fecha_sesion = datetime.strptime(fecha.split('T')[0], '%Y-%m-%d')
+            
+            # Validar que la fecha no sea anterior a la actual
+            if fecha_sesion.date() < fecha_actual.date():
+                return Response({
+                    'error': f'La sesión {i+1} ({fecha.split("T")[0]}) es anterior a la fecha actual'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Validar orden cronológico
+            if i > 0 and fecha_sesion <= datetime.strptime(fechas_sesiones[i-1].split('T')[0], '%Y-%m-%d'):
+                return Response({
+                    'error': f'La sesión {i+1} debe ser posterior a la sesión {i}'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            fechas_ordenadas.append(fecha)
+
         # Verificar que los LECs no tengan planes activos
         lecs_con_planes_activos = []
         for lec_id in lecs_ids:
@@ -46,12 +70,14 @@ def registrar_plan_capacitacion(request):
             centro=centro,
             num_sesiones=num_sesiones,
             modalidad=modalidad,
-            fechas_sesiones=fechas_sesiones,
+            fechas_sesiones=fechas_ordenadas,  # Guardar fechas validadas
             tipo_capacitacion=tipo_capacitacion  # Guardar tipo de capacitación
         )
         plan.lecs.set(lecs)
         plan.save()
         return Response({'message': 'Plan de capacitación registrado exitosamente.'}, status=status.HTTP_201_CREATED)
+    except json.JSONDecodeError:
+        return Response({'error': 'Formato de fechas inválido'}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -131,9 +157,6 @@ def registrar_asistencia(request):
                 # Actualizar con los nuevos datos
                 plan_calificaciones[str(lec_id)] = calificaciones
                 plan_asistencias[str(lec_id)] = asistencias
-                
-                plan.calificaciones = plan_calificaciones
-                plan.asistencias = plan_asistencias
 
                 # Verificar si todas las asistencias están marcadas como true
                 todas_asistencias = True
