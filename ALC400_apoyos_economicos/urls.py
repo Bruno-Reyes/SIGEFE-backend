@@ -1,4 +1,3 @@
-from django.urls import path
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from ALC400_apoyos_economicos.views.views import (
@@ -27,7 +26,7 @@ urlpatterns = [
     path('usuario/<int:usuario_id>/', ListarPagosPorUsuario.as_view(), name="listar-pagos-usuario"),
     path('pendientes/', PagosPendientesAPIView.as_view(), name="pagos-pendientes"),
     path('tipos_becas/', ALC004TiposBecasListView.as_view(), name='tipos-becas-list'),
-    path('lideres-lec-con-becas/', LideresConBecasAPIView.as_view(), name='lideres_lec_con_becas'),  # Corregir esta línea
+    path('lideres-lec-con-becas/', LideresConBecasAPIView.as_view(), name='lideres_lec_con_becas'),
     path('beca-lec/<int:usuario_id>/', LecBecasPorUsuarioView.as_view(), name='lec_con_beca'),
     path('asignar-beca/', AsignarBecaView.as_view(), name='asignar_beca'),
     path('rechazar/<int:id>/', RechazarPagoAPIView.as_view(), name='rechazar_pago'),

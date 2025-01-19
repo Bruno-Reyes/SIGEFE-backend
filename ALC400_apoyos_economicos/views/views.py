@@ -18,7 +18,9 @@ from ALC400_apoyos_economicos.serializers import ALC004TiposBecasSerializer
 from ALC400_apoyos_economicos.models.models import ALC401LecBecas
 from ALC400_apoyos_economicos.serializers import ALC401LecBecasSerializer, UsuarioConBecaSerializer, LecBecasSerializer
 from ALC100_captacion.models.models import DetallesUsuario
+import logging
 
+logger = logging.getLogger(__name__)
 
 class PagoApoyoViewSet(viewsets.ModelViewSet):
     """
@@ -114,75 +116,90 @@ class RegistrarPagoAPIView(APIView):
 
     def post(self, request):
         user = request.user
+        logger.info(f"Usuario autenticado: {user.email}")
 
-        # Validar que el usuario autenticado tenga permisos para registrar pagos
-        if user.tipo_usuario != "coord_nac_rrhh":
-            return Response(
-                {"error": f"No tienes permiso para registrar pagos. Usuario: {user.tipo_usuario}"},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        # Validar usuario receptor
         try:
-            print(request.data["usuario"])
-            usuario_receptor = DetallesUsuario.objects.get(id=request.data["usuario"])
-        except DetallesUsuario.DoesNotExist:
-            return Response(
-                {"error": "El usuario receptor no existe."},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            # Validar que el usuario autenticado tenga permisos para registrar pagos
+            if user.tipo_usuario != "coord_nac_rrhh":
+                logger.warning(f"Permiso denegado para el usuario: {user.email}")
+                return Response(
+                    {"error": f"No tienes permiso para registrar pagos. Usuario: {user.tipo_usuario}"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
-        # Validar que el monto sea mayor a 0
-        monto = request.data.get("monto")
-
-
-        # Validar que el concepto no esté vacío
-        concepto = request.data.get("concepto")
-        if not concepto:
-            return Response(
-                {"error": "El concepto es obligatorio."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # Crear el registro del pago
-        serializer = PagoApoyoSerializer(data={
-            "usuario": usuario_receptor.id,
-            "concepto": concepto,
-            "monto": monto,
-            "estatus": request.data.get("estatus", "pendiente"),
-            "registrado_por": user.email,
-        }, context={"request": request})
-
-        if serializer.is_valid():
-            pago = serializer.save()
-
-            # Obtener información para el correo
-            lec_name = usuario_receptor.usuario.email
-            destinatario = usuario_receptor.usuario.email
-
-            # Generar el mensaje
-            mensaje = mensaje_registro_pago(lec_name, monto)
-
-            # Enviar el correo
+            # Validar usuario receptor
             try:
-                token = request.headers.get('Authorization', '').replace('Bearer ', '')
-                send_mail(
-                    destination=destinatario,
-                    subject="Registro de Pago",
-                    body=mensaje,
-                    token=token
-                )
+                logger.info(f"Buscando usuario receptor con ID: {request.data['usuario']}")
+                usuario_receptor = DetallesUsuario.objects.get(id=request.data["usuario"])
+            except DetallesUsuario.DoesNotExist:
+                logger.error(f"Usuario receptor no encontrado: {request.data['usuario']}")
                 return Response(
-                    {"message": "Pago registrado exitosamente y correo enviado.", "data": serializer.data},
-                    status=status.HTTP_201_CREATED
-                )
-            except Exception as e:
-                return Response(
-                    {"error": f"No se pudo enviar el correo: {str(e)}"},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    {"error": "El usuario receptor no existe."},
+                    status=status.HTTP_404_NOT_FOUND
                 )
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            # Validar que el monto sea mayor a 0
+            monto = request.data.get("monto")
+            logger.info(f"Monto recibido: {monto}")
+
+            # Validar que el concepto no esté vacío
+            concepto = request.data.get("concepto")
+            if not concepto:
+                logger.warning("El concepto es obligatorio.")
+                return Response(
+                    {"error": "El concepto es obligatorio."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Crear el registro del pago
+            serializer = PagoApoyoSerializer(data={
+                "usuario": usuario_receptor.id,
+                "concepto": concepto,
+                "monto": monto,
+                "estatus": request.data.get("estatus", "pendiente"),
+                "registrado_por": user.email,
+            }, context={"request": request})
+
+            if serializer.is_valid():
+                pago = serializer.save()
+
+                # Obtener información para el correo
+                lec_name = usuario_receptor.usuario.email
+                destinatario = usuario_receptor.usuario.email
+
+                # Generar el mensaje
+                mensaje = mensaje_registro_pago(lec_name, monto)
+
+                # Enviar el correo
+                try:
+                    token = request.headers.get('Authorization', '').replace('Bearer ', '')
+                    send_mail(
+                        destination=destinatario,
+                        subject="Registro de Pago",
+                        body=mensaje,
+                        token=token
+                    )
+                    logger.info(f"Pago registrado y correo enviado a: {destinatario}")
+                    return Response(
+                        {"message": "Pago registrado exitosamente y correo enviado.", "data": serializer.data},
+                        status=status.HTTP_201_CREATED
+                    )
+                except Exception as e:
+                    logger.error(f"No se pudo enviar el correo: {str(e)}")
+                    return Response(
+                        {"error": f"No se pudo enviar el correo: {str(e)}"},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    )
+
+            logger.warning(f"Errores de validación: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            logger.error(f"Error en RegistrarPagoAPIView: {str(e)}")
+            return Response(
+                {"error": f"Error en el servidor: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class ActualizarMontoPagoAPIView(APIView):
     """
