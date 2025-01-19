@@ -17,6 +17,7 @@ from ALC400_apoyos_economicos.models.models import ALC004TiposBecas
 from ALC400_apoyos_economicos.serializers import ALC004TiposBecasSerializer
 from ALC400_apoyos_economicos.models.models import ALC401LecBecas
 from ALC400_apoyos_economicos.serializers import ALC401LecBecasSerializer, UsuarioConBecaSerializer, LecBecasSerializer
+from ALC100_captacion.models.models import DetallesUsuario
 
 
 class PagoApoyoViewSet(viewsets.ModelViewSet):
@@ -123,8 +124,9 @@ class RegistrarPagoAPIView(APIView):
 
         # Validar usuario receptor
         try:
-            usuario_receptor = Usuario.objects.get(id=request.data["usuario"])
-        except Usuario.DoesNotExist:
+            print(request.data["usuario"])
+            usuario_receptor = DetallesUsuario.objects.get(id=request.data["usuario"])
+        except DetallesUsuario.DoesNotExist:
             return Response(
                 {"error": "El usuario receptor no existe."},
                 status=status.HTTP_404_NOT_FOUND
@@ -132,16 +134,20 @@ class RegistrarPagoAPIView(APIView):
 
         # Validar que el monto sea mayor a 0
         monto = request.data.get("monto")
-        if monto is None or float(monto) <= 0:
+
+
+        # Validar que el concepto no esté vacío
+        concepto = request.data.get("concepto")
+        if not concepto:
             return Response(
-                {"error": "El monto debe ser mayor a 0."},
+                {"error": "El concepto es obligatorio."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         # Crear el registro del pago
         serializer = PagoApoyoSerializer(data={
             "usuario": usuario_receptor.id,
-            "concepto": request.data.get("concepto"),
+            "concepto": concepto,
             "monto": monto,
             "estatus": request.data.get("estatus", "pendiente"),
             "registrado_por": user.email,
@@ -151,8 +157,8 @@ class RegistrarPagoAPIView(APIView):
             pago = serializer.save()
 
             # Obtener información para el correo
-            lec_name = usuario_receptor.email
-            destinatario = usuario_receptor.email
+            lec_name = usuario_receptor.usuario.email
+            destinatario = usuario_receptor.usuario.email
 
             # Generar el mensaje
             mensaje = mensaje_registro_pago(lec_name, monto)
@@ -201,12 +207,7 @@ class ActualizarMontoPagoAPIView(APIView):
 
         # Validar que el monto sea mayor a 0
         nuevo_monto = request.data.get("monto")
-        if not nuevo_monto or float(nuevo_monto) <= 0:
-            return Response(
-                {"error": "El monto debe ser un número mayor a 0."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
+        
         # Actualizar el monto y guardar el registro
         pago.monto = nuevo_monto
         pago.save()
@@ -310,10 +311,10 @@ class ConfirmarPagoAPIView(APIView):
         pago.confirmacion_lec = 'recibido'
         pago.save()
 
-        # Obtener información para el correo
-        lec_name = pago.usuario.email
+        # Obtener información para el correo - Corregido para acceder al email correctamente
+        lec_name = pago.usuario.usuario.email  # Accedemos al email a través de la relación
         monto = pago.monto
-        destinatario = pago.usuario.email
+        destinatario = pago.usuario.usuario.email  # Accedemos al email a través de la relación
 
         # Generar el mensaje
         mensaje = mensaje_confirmacion_pago(lec_name, monto)
@@ -345,34 +346,55 @@ class PagosPendientesAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        # Filtrar los pagos pendientes según el usuario
-        if request.user.email == "coord_nac_rrhh@example.com":
-            pagos_pendientes = PagoApoyo.objects.filter(estatus="pendiente").select_related('usuario')
-        elif request.user.tipo_usuario == TipoUsuario.LIDER_LEC:
-            pagos_pendientes = PagoApoyo.objects.filter(usuario=request.user, estatus="pendiente").select_related('usuario')
-        else:
+        try:
+            # Filtrar los pagos pendientes según el usuario
+            if request.user.email == "coord_nac_rrhh@example.com":
+                # Para coord_nac_rrhh, mostrar todos los pagos pendientes
+                pagos_pendientes = PagoApoyo.objects.filter(
+                    estatus="pendiente"
+                ).select_related('usuario')
+            elif request.user.tipo_usuario == TipoUsuario.LIDER_LEC:
+                # Para LIDER_LEC, mostrar solo sus pagos pendientes
+                # Primero obtener el DetallesUsuario asociado
+                try:
+                    detalles_usuario = request.user.detalles
+                    pagos_pendientes = PagoApoyo.objects.filter(
+                        usuario=detalles_usuario,
+                        estatus="pendiente"
+                    ).select_related('usuario')
+                except DetallesUsuario.DoesNotExist:
+                    return Response(
+                        {"error": "No se encontraron detalles para este usuario."},
+                        status=status.HTTP_404_NOT_FOUND
+                    )
+            else:
+                return Response(
+                    {"error": "No tienes permiso para acceder a los pagos pendientes."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            # Serializar los datos incluyendo el nombre del usuario
+            data = []
+            for pago in pagos_pendientes:
+                data.append({
+                    "id": pago.id,
+                    "usuario_id": pago.usuario.id,
+                    "nombre_usuario": f"{pago.usuario.nombres} {pago.usuario.apellido_paterno} {pago.usuario.apellido_materno}",
+                    "concepto": pago.concepto,
+                    "monto": float(pago.monto),  # Convertir a float para serialización JSON
+                    "fecha_pago": pago.fecha_pago,
+                    "estatus": pago.estatus,
+                    "registrado_por": pago.registrado_por,
+                    "confirmacion_lec": pago.confirmacion_lec,
+                })
+
+            return Response(data, status=status.HTTP_200_OK)
+
+        except Exception as e:
             return Response(
-                {"error": "No tienes permiso para acceder a los pagos pendientes."},
-                status=403
+                {"error": f"Error al obtener pagos pendientes: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
-        # Serializar los datos incluyendo el nombre del usuario
-        data = [
-            {
-                "id": pago.id,
-                "usuario_id": pago.usuario.id,
-                "nombre_usuario": f"{pago.usuario.first_name} {pago.usuario.last_name}",
-                "concepto": pago.concepto,
-                "monto": pago.monto,
-                "fecha_pago": pago.fecha_pago,
-                "estatus": pago.estatus,
-                "registrado_por": pago.registrado_por,
-                "confirmacion_lec": pago.confirmacion_lec,
-            }
-            for pago in pagos_pendientes
-        ]
-
-        return Response(data, status=status.HTTP_200_OK)
 
 
 class ALC004TiposBecasListView(APIView):
@@ -388,61 +410,132 @@ class LideresConBecasAPIView(APIView):
     GET: /api/pagos/lideres-lec-con-becas/
     """
     def get(self, request):
-        # Obtener los usuarios tipo 'lider_lec' y prefetch de las becas
-        usuarios = Usuario.objects.filter(tipo_usuario='lider_lec').prefetch_related('becas__tipo_beca')
+        try:
+            # Modificar la consulta para obtener solo usuarios con becas asignadas
+            usuarios = Usuario.objects.filter(
+                tipo_usuario='lider_lec',
+                detalles__isnull=False,
+                becas__isnull=False  # Asegurarse de que tengan becas asignadas
+            ).select_related(
+                'detalles'
+            ).prefetch_related(
+                'becas__tipo_beca'
+            ).distinct()  # Evitar duplicados si tienen múltiples becas
 
-        # Formatear los datos manualmente
-        data = []
-        for usuario in usuarios:
-            beca_asignada = usuario.becas.first().tipo_beca.tipo if usuario.becas.exists() else None
-            data.append({
-                "usuario_id": usuario.id,
-                "email": usuario.email,
-                "tipo_usuario": usuario.tipo_usuario,
-                "tipo_beca_asignada": beca_asignada
-            })
+            data = []
+            for usuario in usuarios:
+                try:
+                    if not hasattr(usuario, 'detalles') or not usuario.detalles:
+                        continue
 
-        return Response(data, status=200)
-    
+                    nombre_completo = f"{usuario.detalles.nombres} {usuario.detalles.apellido_paterno} {usuario.detalles.apellido_materno}".strip()
+                    
+                    # Obtener la beca activa del usuario
+                    beca = usuario.becas.first()
+                    if not beca or not hasattr(beca, 'tipo_beca'):
+                        continue  # Saltar si no tiene beca o tipo de beca
+
+                    # Solo agregar usuarios que tengan nombre completo y beca asignada
+                    if nombre_completo:
+                        data.append({
+                            "usuario": usuario.detalles.id,
+                            "nombre_completo": nombre_completo,
+                            "email": usuario.email,
+                            "tipo_usuario": usuario.tipo_usuario,
+                            "tipo_beca": {
+                                "tipo": beca.tipo_beca.tipo
+                            }
+                        })
+
+                except Exception as e:
+                    print(f"Error procesando usuario {usuario.email}: {str(e)}")
+                    continue
+
+            # Ordenar por nombre_completo
+            data = sorted(data, key=lambda x: x['nombre_completo'])
+
+            return Response(data, status=status.HTTP_200_OK)
+        except Exception as e:
+            print(f"Error en LideresConBecasAPIView: {str(e)}")
+            return Response(
+                {"error": f"Error al obtener usuarios con becas: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
 class AsignarBecaView(APIView):
     """
     Endpoint para asignar una beca a un usuario y enviar un correo de notificación.
-    POST: /api/lec-becas/asignar/
+    POST: /api/pagos/asignar-beca/
     """
     def post(self, request):
-        serializer = ALC401LecBecasSerializer(data=request.data)
-        if serializer.is_valid():
-            beca = serializer.save()
+        try:
+            # Obtener y validar los datos
+            tipo_beca_id = request.data.get('tipo_beca')
+            usuario_id = request.data.get('usuario')
+            estatus = request.data.get('estatus', 1)
 
-            # Obtener información para el correo
-            lec_name = beca.usuario.email
-            tipo_beca = beca.tipo_beca.tipo
-            destinatario = beca.usuario.email
-
-            # Generar el mensaje
-            mensaje = mensaje_asignacion_beca(lec_name, tipo_beca)
-
-            # Enviar el correo
-            try:
-                token = request.headers.get('Authorization', '').replace('Bearer ', '')
-                send_mail(
-                    destination=destinatario,
-                    subject="Asignación de Beca",
-                    body=mensaje,
-                    token=token
-                )
+            if not tipo_beca_id or not usuario_id:
                 return Response(
-                    {"message": "Beca asignada y correo enviado correctamente.", "data": serializer.data},
-                    status=status.HTTP_201_CREATED
+                    {"error": "Tipo de beca y usuario son requeridos"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Obtener el usuario y tipo de beca
+            try:
+                usuario = Usuario.objects.get(id=usuario_id)
+                tipo_beca = ALC004TiposBecas.objects.get(id=tipo_beca_id)
+            except (Usuario.DoesNotExist, ALC004TiposBecas.DoesNotExist) as e:
+                return Response(
+                    {"error": "Usuario o tipo de beca no encontrado"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            # Crear la asignación de beca
+            beca = ALC401LecBecas.objects.create(
+                tipo_beca=tipo_beca,
+                usuario=usuario,
+                estatus=estatus
+            )
+
+            # Crear el registro en PagoApoyo
+            try:
+                PagoApoyo.objects.create(
+                    usuario=usuario.detalles,
+                    concepto=tipo_beca.tipo,
+                    monto=tipo_beca.monto,
+                    estatus='pendiente',
+                    registrado_por=request.user.email
                 )
             except Exception as e:
                 return Response(
-                    {"error": f"No se pudo enviar el correo: {str(e)}"},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    {"error": f"Error al crear el registro de pago: {str(e)}"},
+                    status=status.HTTP_400_BAD_REQUEST
                 )
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+            # Enviar correo de notificación
+            try:
+                token = request.headers.get('Authorization', '').replace('Bearer ', '')
+                send_mail(
+                    destination=usuario.email,
+                    subject="Asignación de Beca",
+                    body=mensaje_asignacion_beca(usuario.email, tipo_beca.tipo),
+                    token=token
+                )
+            except Exception as e:
+                # Log el error pero no detener el proceso
+                print(f"Error al enviar correo: {str(e)}")
+
+            return Response(
+                {"message": "Beca asignada exitosamente"},
+                status=status.HTTP_201_CREATED
+            )
+
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
 class LecBecasListView(generics.ListAPIView):
     queryset = ALC401LecBecas.objects.select_related('tipo_beca', 'usuario').all()
     serializer_class = LecBecasSerializer

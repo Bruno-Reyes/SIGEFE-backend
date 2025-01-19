@@ -22,7 +22,7 @@ class PagoApoyoSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Solo los usuarios LIDER_LEC pueden modificar este campo.")
 
         # Validar que el monto sea mayor a 0
-        if 'monto' in data and data['monto'] <= 0:
+        if 'monto' in data and data['monto'] < 0:
             raise serializers.ValidationError("El monto debe ser mayor a 0.")
 
         return data

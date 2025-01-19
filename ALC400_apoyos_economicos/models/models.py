@@ -1,5 +1,6 @@
 from django.db import models
 from ALC000_sistema_base.models.models import Usuario
+from ALC100_captacion.models.models import DetallesUsuario
 
 # Tabla PagoApoyo
 class PagoApoyo(models.Model):
@@ -24,7 +25,7 @@ class PagoApoyo(models.Model):
         ('no_recibido', 'No Recibido'),
     ]
 
-    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="pagos")
+    usuario = models.ForeignKey(DetallesUsuario, on_delete=models.CASCADE, related_name="pagos")
     concepto = models.CharField(max_length=50, choices=CONCEPTOS)
     monto = models.DecimalField(max_digits=10, decimal_places=2)
     fecha_pago = models.DateField(auto_now_add=True)
