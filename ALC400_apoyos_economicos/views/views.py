@@ -6,7 +6,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
-from services.send_mail import send_mail
+from rest_framework import serializers
+from services.send_mail import authenticate, send_mail
 from ALC000_sistema_base.models.models import Usuario
 from ALC000_sistema_base.serializers import UsuarioSerializer
 from utils.mensajes_predefinidos import mensaje_asignacion_beca, mensaje_registro_pago, mensaje_confirmacion_pago, mensaje_rechazo_pago, mensaje_eliminacion_pago
@@ -169,10 +170,11 @@ class RegistrarPagoAPIView(APIView):
 
                 # Generar el mensaje
                 mensaje = mensaje_registro_pago(lec_name, monto)
-
+                #=======================YA ESTA FUNCIONAL=======================
                 # Enviar el correo
                 try:
-                    token = request.headers.get('Authorization', '').replace('Bearer ', '')
+                     # Intentar enviar el correo
+                    token = authenticate()
                     send_mail(
                         destination=destinatario,
                         subject="Registro de Pago",
@@ -279,17 +281,18 @@ class RechazarPagoAPIView(APIView):
         pago.confirmacion_lec = 'no_recibido'
         pago.save()
 
-        # Obtener información para el correo
-        lec_name = pago.usuario.email
+        # Obtener información para el correo - Corregido para acceder al email correctamente
+        lec_name = pago.usuario.usuario.email  # Accedemos al email a través de la relación
         monto = pago.monto
-        destinatario = pago.usuario.email
+        destinatario = pago.usuario.usuario.email  # Accedemos al email a través de la relación
 
         # Generar el mensaje
         mensaje = mensaje_rechazo_pago(lec_name, monto)
 
         # Enviar el correo
+        #=======================YA ESTA FUNCIONAL=======================
         try:
-            token = request.headers.get('Authorization', '').replace('Bearer ', '')
+            token = authenticate()
             send_mail(
                 destination=destinatario,
                 subject="Rechazo de Pago",
@@ -337,8 +340,9 @@ class ConfirmarPagoAPIView(APIView):
         mensaje = mensaje_confirmacion_pago(lec_name, monto)
 
         # Enviar el correo
+        #=======================YA ESTA FUNCIONAL=======================
         try:
-            token = request.headers.get('Authorization', '').replace('Bearer ', '')
+            token = authenticate()
             send_mail(
                 destination=destinatario,
                 subject="Confirmación de Pago",
@@ -530,8 +534,9 @@ class AsignarBecaView(APIView):
                 )
 
             # Enviar correo de notificación
+        #=======================YA ESTA FUNCIONAL=======================
             try:
-                token = request.headers.get('Authorization', '').replace('Bearer ', '')
+                token = authenticate()
                 send_mail(
                     destination=usuario.email,
                     subject="Asignación de Beca",
@@ -609,8 +614,9 @@ class EditarAsignacionBecaAPIView(APIView):
         mensaje = mensaje_asignacion_beca(lec_name, tipo_beca_nombre)
 
         # Enviar el correo
+        #=======================YA ESTA FUNCIONAL=======================
         try:
-            token = request.headers.get('Authorization', '').replace('Bearer ', '')
+            token = authenticate()
             send_mail(
                 destination=destinatario,
                 subject="Actualización de Asignación de Beca",
@@ -649,30 +655,41 @@ class EliminarPagoAPIView(APIView):
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        # Obtener información para el correo antes de eliminar
-        lec_name = pago.usuario.email
-        monto = pago.monto
-        destinatario = pago.usuario.email
-
-        # Eliminar el registro de la base de datos
-        pago.delete()
-
-        # Generar y enviar el mensaje de notificación
-        mensaje = mensaje_eliminacion_pago(lec_name, monto)
         try:
-            token = request.headers.get('Authorization', '').replace('Bearer ', '')
-            send_mail(
-                destination=destinatario,
-                subject="Eliminación de Pago",
-                body=mensaje,
-                token=token
-            )
-            return Response(
-                {"message": f"El pago con ID {id} ha sido eliminado y el correo fue enviado."},
-                status=status.HTTP_200_OK
-            )
+            # Obtener información para el correo antes de eliminar
+            # Accedemos al email a través de la relación usuario -> detalles -> usuario
+            lec_name = pago.usuario.usuario.email  # Corregido: accedemos al email a través de la relación
+            monto = pago.monto
+            destinatario = pago.usuario.usuario.email  # Corregido: accedemos al email a través de la relación
+
+            # Eliminar el registro de la base de datos
+            pago.delete()
+
+            # Generar y enviar el mensaje de notificación
+            mensaje = mensaje_eliminacion_pago(lec_name, monto)
+            try:
+                token = authenticate()
+                send_mail(
+                    destination=destinatario,
+                    subject="Eliminación de Pago",
+                    body=mensaje,
+                    token=token
+                )
+                return Response(
+                    {"message": f"El pago con ID {id} ha sido eliminado y el correo fue enviado."},
+                    status=status.HTTP_200_OK
+                )
+            except Exception as e:
+                # Si falla el envío del correo, al menos notificamos que el pago fue eliminado
+                return Response(
+                    {
+                        "message": f"El pago con ID {id} ha sido eliminado pero no se pudo enviar el correo.",
+                        "error_correo": str(e)
+                    },
+                    status=status.HTTP_200_OK
+                )
         except Exception as e:
             return Response(
-                {"error": f"No se pudo enviar el correo: {str(e)}"},
+                {"error": f"Error al procesar la eliminación: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
