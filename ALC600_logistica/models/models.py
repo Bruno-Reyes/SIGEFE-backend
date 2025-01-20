@@ -4,7 +4,6 @@ from ALC200_asignacion.models.models import CentroComunitario
 # Modelo para subir equipo disponible
 
 class EquipoDisponible( models.Model ):
-
     nombre_equipo = models.CharField(max_length=40)
     cantidad_disponible = models.IntegerField()
     descripcion = models.CharField(max_length=360)
@@ -17,6 +16,9 @@ class EquipoDisponible( models.Model ):
     ]
 
     categoria = models.CharField( max_length = 18, choices = CATEGORIAS )
+    volumen = models.FloatField(blank=True, null=True)
+    def __str__(self):
+        return f"Nombre equipo: {self.nombre_equipo}\nCantidad disponible: {self.cantidad_disponible} \n"
 
 class AsignacionMaterial(models.Model):
     equipo = models.ForeignKey(EquipoDisponible, on_delete=models.CASCADE, related_name='asignaciones')

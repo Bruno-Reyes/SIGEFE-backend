@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ALC600_logistica.models.models import EquipoDisponible, AsignacionMaterial
+from ALC600_logistica.models.models import EquipoDisponible, AsignacionMaterial, CentrosDistribucion
 
 class EquipoDisponibleSerializer(serializers.ModelSerializer):
     class Meta:
@@ -25,3 +25,8 @@ class AsignacionMaterialSerializer(serializers.ModelSerializer):
             'estado',
             'municipio',
         ]
+        
+class CentroDistribucionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CentrosDistribucion
+        fields = '__all__' 

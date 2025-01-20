@@ -1,12 +1,14 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from ALC600_logistica.models.models import EquipoDisponible, AsignacionMaterial, CentrosDistribucion
-from ALC600_logistica.serializer import AsignacionMaterialSerializer, EquipoDisponibleSerializer
+from ALC600_logistica.serializer import AsignacionMaterialSerializer, EquipoDisponibleSerializer, CentroDistribucionSerializer
+from ALC200_asignacion.serializers import CentroComunitarioSerializer    
 from rest_framework.decorators import permission_classes
 from ALC200_asignacion.models.models import CentroComunitario
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
-from ALC600_logistica.services import generarRuta
+from ALC600_logistica.services import solve_cvrp
+from rest_framework import status
 
 import json
 
@@ -109,43 +111,35 @@ class GenerarRuta(APIView):
             # Obtener el estado
             data = json.loads(request.body)
             estado = data.get("estado")
+                    
             if not estado:
                 return Response({"error": "El estado es requerido."}, status=400)
-            
+            # Obtener el centro de distribución del estado
+            centro_distribucion = CentrosDistribucion.objects.filter(estado__exact=estado)
+            # Verificar si hay resultados
+            if not centro_distribucion.exists():
+                return Response({"error": "No se encontraron centros de distribución para el estado proporcionado."},
+                                status=status.HTTP_404_NOT_FOUND)
+
+            # Serializar los resultados
+            serializer_centro_distribucion = CentroDistribucionSerializer(centro_distribucion, many=True)
             # Obtener los centros comunitarios del estado
-            centros = CentroComunitario.objects.filter(estado=estado)
+            centros = CentroComunitario.objects.filter(estado__exact=estado)
             if not centros.exists():
                 return Response({"message": "No hay centros comunitarios registrados en el estado."}, status=200)
-            
+            serializer_centros_comunitarios = CentroComunitarioSerializer(centros, many=True)
             # Obtener las asignaciones de los centros
             asignaciones = AsignacionMaterial.objects.filter(centro__in=centros)
             if not asignaciones.exists():
                 return Response({"message": "No hay asignaciones registradas en los centros del estado."}, status=200)
             
-            # Convertir asignaciones a una estructura de datos comprensible
-            print(asignaciones)
-            asignaciones_data = []
-            # for asignacion in asignaciones:
-            #     asignaciones_data.append({
-            #         "equipo": asignacion.equipo.nombre,
-            #         "centro": asignacion.centro.nombre,
-            #         "cantidad_asignada": asignacion.cantidad_asignada,
-            #     })
-
-            # Convertir centros a una estructura de datos comprensible
-            centros_data = []
-            # for centro in centros:
-            #     centros_data.append({
-            #         "nombre": centro.nombre,
-            #         "direccion": centro.direccion,
-            #         "estado": centro.estado,
-            #     })
-                
             # Generar la ruta
-            generarRuta(asignaciones_data, centros_data)
+            route, cost = solve_cvrp(centro_distribucion, centros)
 
-            return Response({"message": "OK"}, status=200)
-            
+            return Response({"centro_distribucion": serializer_centro_distribucion.data,
+                             "localidades" : serializer_centros_comunitarios.data, 
+                             "ruta_distribucion" : route,
+                             "cost" : cost}, status=200)
             
         except Exception as e:
             return Response({"error": str(e)}, status=500)
